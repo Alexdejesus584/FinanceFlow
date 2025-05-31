@@ -46,7 +46,7 @@ function Evolution() {
   });
   const [newInstance, setNewInstance] = useState({
     instanceName: "",
-    channel: "baileys",
+    channel: "whatsapp-web",
     token: "",
     phoneNumber: ""
   });
@@ -88,20 +88,20 @@ function Evolution() {
     },
   });
 
-  // Mutation para criar nova instância
+  // Mutation para criar nova instância na Evolution API real
   const createInstance = useMutation({
     mutationFn: async (data: typeof newInstance) => {
-      return await apiRequest("/api/evolution-instances", "POST", data);
+      return await apiRequest("/api/evolution-instances/create-real", "POST", data);
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast({
         title: "Instância criada",
-        description: "Nova instância criada com sucesso.",
+        description: "Nova instância criada na Evolution API com sucesso.",
       });
       setShowNewInstanceDialog(false);
       setNewInstance({
         instanceName: "",
-        channel: "baileys",
+        channel: "whatsapp-web",
         token: "",
         phoneNumber: ""
       });
@@ -110,7 +110,7 @@ function Evolution() {
     onError: (error) => {
       toast({
         title: "Erro ao criar instância",
-        description: "Não foi possível criar a instância.",
+        description: error.message || "Não foi possível criar a instância.",
         variant: "destructive",
       });
     },

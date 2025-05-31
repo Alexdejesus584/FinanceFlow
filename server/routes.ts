@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { EvolutionAPIClient } from "./evolution-api";
 import { 
   insertCustomerSchema, 
   insertBillingSchema, 
@@ -378,6 +379,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error disconnecting evolution instance:", error);
       res.status(500).json({ message: "Failed to disconnect evolution instance" });
+    }
+  });
+
+  // Criar instância real na Evolution API
+  app.post('/api/evolution-instances/create-real', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { instanceName, token, phoneNumber } = req.body;
+      
+      // Buscar configurações globais do usuário
+      const settings = await storage.getEvolutionSettings(userId);
+      if (!settings) {
+        return res.status(400).json({ message: "Evolution API not configured. Please configure global settings first." });
+      }
+
+      // Criar cliente da Evolution API
+      const evolutionClient = new EvolutionAPIClient({
+        baseUrl: settings.globalApiUrl,
+        globalApiKey: settings.globalApiKey.trim()
+      });
+
+      // Criar instância na Evolution API
+      const instanceData = {
+        instanceName: instanceName,
+        token: token || undefined,
+        qrcode: true,
+        number: phoneNumber || undefined
+      };
+
+      console.log("Creating Evolution API instance:", instanceData);
+      const evolutionResponse = await evolutionClient.createInstance(instanceData);
+      console.log("Evolution API response:", evolutionResponse);
+
+      // Salvar instância no banco de dados
+      const dbInstance = await storage.createEvolutionInstance({
+        instanceName,
+        token: evolutionResponse.hash?.apikey || token,
+        channel: 'whatsapp-web',
+        phoneNumber: phoneNumber || null,
+        status: 'created',
+        isConnected: false,
+        qrCode: null,
+        userId
+      });
+
+      res.json({
+        instance: dbInstance,
+        evolutionData: evolutionResponse
+      });
+    } catch (error) {
+      console.error("Error creating Evolution API instance:", error);
+      res.status(500).json({ 
+        message: "Failed to create Evolution API instance",
+        error: error.message 
+      });
+    }
+  });
+
+  // Conectar instância na Evolution API
+  app.post('/api/evolution-instances/:id/connect-real', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      
+      const instance = await storage.getEvolutionInstance(id, userId);
+      if (!instance) {
+        return res.status(404).json({ message: "Instance not found" });
+      }
+
+      const settings = await storage.getEvolutionSettings(userId);
+      if (!settings) {
+        return res.status(400).json({ message: "Evolution API not configured" });
+      }
+
+      const evolutionClient = new EvolutionAPIClient({
+        baseUrl: settings.globalApiUrl,
+        globalApiKey: settings.globalApiKey.trim()
+      });
+
+      const connectResponse = await evolutionClient.connectInstance(instance.instanceName);
+      
+      // Atualizar status no banco
+      await storage.updateEvolutionInstance(id, {
+        isConnected: true,
+        status: 'connecting'
+      }, userId);
+
+      res.json({
+        message: "Instance connection initiated",
+        qrCode: connectResponse.qrcode,
+        response: connectResponse
+      });
+    } catch (error) {
+      console.error("Error connecting Evolution API instance:", error);
+      res.status(500).json({ 
+        message: "Failed to connect Evolution API instance",
+        error: error.message 
+      });
+    }
+  });
+
+  // Obter QR Code da instância
+  app.get('/api/evolution-instances/:id/qrcode', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      
+      const instance = await storage.getEvolutionInstance(id, userId);
+      if (!instance) {
+        return res.status(404).json({ message: "Instance not found" });
+      }
+
+      const settings = await storage.getEvolutionSettings(userId);
+      if (!settings) {
+        return res.status(400).json({ message: "Evolution API not configured" });
+      }
+
+      const evolutionClient = new EvolutionAPIClient({
+        baseUrl: settings.globalApiUrl,
+        globalApiKey: settings.globalApiKey.trim()
+      });
+
+      const qrResponse = await evolutionClient.getQRCode(instance.instanceName);
+      
+      res.json({
+        qrCode: qrResponse.qrcode,
+        instance: qrResponse.instance
+      });
+    } catch (error) {
+      console.error("Error getting QR code:", error);
+      res.status(500).json({ 
+        message: "Failed to get QR code",
+        error: error.message 
+      });
     }
   });
 
