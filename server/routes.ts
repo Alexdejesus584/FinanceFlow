@@ -335,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/evolution-instances/:id/connect', isAuthenticated, async (req: any, res) => {
+  app.post('/api/evolution-instances/:id/connect', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
@@ -352,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/evolution-instances/:id/disconnect', isAuthenticated, async (req: any, res) => {
+  app.post('/api/evolution-instances/:id/disconnect', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
