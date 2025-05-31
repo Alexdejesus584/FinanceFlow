@@ -46,9 +46,8 @@ function Evolution() {
   });
   const [newInstance, setNewInstance] = useState({
     instanceName: "",
-    channel: "whatsapp-web",
     token: "",
-    phoneNumber: ""
+    useCustomToken: false
   });
 
   // Buscar configurações globais
@@ -101,9 +100,8 @@ function Evolution() {
       setShowNewInstanceDialog(false);
       setNewInstance({
         instanceName: "",
-        channel: "whatsapp-web",
         token: "",
-        phoneNumber: ""
+        useCustomToken: false
       });
       queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
     },
@@ -308,73 +306,88 @@ function Evolution() {
                 Nova Instância
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle className="text-gray-900 dark:text-white">Nova Instância WhatsApp</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-white flex items-center gap-2">
+                  <span>📱</span> Nova Instância
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-6 py-4">
+                {/* Nome da Instância */}
                 <div className="space-y-2">
-                  <Label htmlFor="instanceName" className="text-gray-700 dark:text-gray-300">Nome da Instância</Label>
+                  <Label htmlFor="instanceName" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    🏷️ Nome da Instância
+                  </Label>
                   <Input
                     id="instanceName"
                     value={newInstance.instanceName}
                     onChange={(e) => setNewInstance(prev => ({ ...prev, instanceName: e.target.value }))}
-                    placeholder="Ex: WhatsApp Vendas"
+                    placeholder="Digite o nome da instância"
                     className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Escolha um nome único e descritivo para a instância
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="channel" className="text-gray-700 dark:text-gray-300">Canal</Label>
-                  <Select value={newInstance.channel} onValueChange={(value) => setNewInstance(prev => ({ ...prev, channel: value }))}>
-                    <SelectTrigger className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baileys">Baileys</SelectItem>
-                      <SelectItem value="whatsapp-web">WhatsApp Web</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Token Personalizado */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        🔑 Token Personalizado
+                      </Label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Escolha entre gerar um token aleatório ou definir manualmente
+                      </p>
+                    </div>
+                    <Switch
+                      checked={newInstance.useCustomToken}
+                      onCheckedChange={(checked) => 
+                        setNewInstance(prev => ({ 
+                          ...prev, 
+                          useCustomToken: checked,
+                          token: checked ? prev.token : ""
+                        }))
+                      }
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="token" className="text-gray-700 dark:text-gray-300">Token</Label>
-                  <Input
-                    id="token"
-                    value={newInstance.token}
-                    onChange={(e) => setNewInstance(prev => ({ ...prev, token: e.target.value }))}
-                    placeholder="Token de autenticação"
-                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                  />
+                  {/* Campo de Token (condicional) */}
+                  {newInstance.useCustomToken && (
+                    <div className="space-y-2">
+                      <Label htmlFor="token" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        🔐 Token da Instância
+                      </Label>
+                      <Input
+                        id="token"
+                        value={newInstance.token}
+                        onChange={(e) => setNewInstance(prev => ({ ...prev, token: e.target.value }))}
+                        placeholder="Digite o token da instância"
+                        className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        O token deve ser único para cada instância
+                      </p>
+                    </div>
+                  )}
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber" className="text-gray-700 dark:text-gray-300">Número (Opcional)</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={newInstance.phoneNumber}
-                    onChange={(e) => setNewInstance(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                    placeholder="5511999999999"
-                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                  />
-                </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button 
-                    onClick={handleCreateInstance}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={createInstance.isPending}
-                  >
-                    {createInstance.isPending ? "Criando..." : "Criar Instância"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowNewInstanceDialog(false)}
-                    className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    Cancelar
-                  </Button>
-                </div>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowNewInstanceDialog(false)}
+                  className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCreateInstance}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={createInstance.isPending || !newInstance.instanceName}
+                >
+                  {createInstance.isPending ? "Criando..." : "Criar Instância"}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
