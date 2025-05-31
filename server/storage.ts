@@ -376,8 +376,8 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(billings.userId, userId),
           eq(billings.status, 'paid'),
-          gte(billings.paidAt, firstDay.toISOString()),
-          lte(billings.paidAt, lastDay.toISOString())
+          gte(billings.paidAt, firstDay),
+          lte(billings.paidAt, lastDay)
         )
       );
 

@@ -31,10 +31,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertBillingSchema } from "@shared/schema";
 import type { Billing, Customer } from "@shared/schema";
 
-const formSchema = insertBillingSchema.extend({
-  amount: z.string().min(1, "Valor é obrigatório"),
-  dueDate: z.string().min(1, "Data de vencimento é obrigatória"),
-});
+const formSchema = insertBillingSchema;
 
 type FormData = z.infer<typeof formSchema>;
 
