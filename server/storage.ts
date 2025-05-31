@@ -5,6 +5,7 @@ import {
   messageTemplates,
   messageHistory,
   calendarEvents,
+  evolutionInstances,
   type User,
   type UpsertUser,
   type Customer,
@@ -16,6 +17,8 @@ import {
   type MessageHistory,
   type CalendarEvent,
   type InsertCalendarEvent,
+  type EvolutionInstance,
+  type InsertEvolutionInstance,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, gte, lte, or, sql, count } from "drizzle-orm";

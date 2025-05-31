@@ -24,6 +24,7 @@ const navigation = [
   { name: 'Clientes', href: '/customers', icon: Users },
   { name: 'Kanban', href: '/kanban', icon: Columns },
   { name: 'Mensagens', href: '/messages', icon: MessageSquare },
+  { name: 'Evolution API', href: '/evolution', icon: MessageSquare },
   { name: 'Usuários', href: '/users', icon: UserCog },
 ];
 

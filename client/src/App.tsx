@@ -11,6 +11,7 @@ import Calendar from "@/pages/calendar";
 import Customers from "@/pages/customers";
 import Kanban from "@/pages/kanban";
 import Messages from "@/pages/messages";
+import Evolution from "@/pages/evolution";
 import Users from "@/pages/users";
 import Sidebar from "@/components/sidebar";
 import Header from "@/components/header";
@@ -39,6 +40,7 @@ function Router() {
             <Route path="/customers" component={Customers} />
             <Route path="/kanban" component={Kanban} />
             <Route path="/messages" component={Messages} />
+            <Route path="/evolution" component={Evolution} />
             <Route path="/users" component={Users} />
             <Route component={NotFound} />
           </Switch>
