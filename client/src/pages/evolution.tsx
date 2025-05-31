@@ -67,15 +67,9 @@ function Evolution() {
   const saveGlobalSettings = useMutation({
     mutationFn: async (data: { globalApiUrl: string; globalApiKey: string }) => {
       if (settings?.id) {
-        return await apiRequest(`/api/evolution-settings/${settings.id}`, {
-          method: "PUT",
-          body: data,
-        });
+        return await apiRequest(`/api/evolution-settings/${settings.id}`, "PUT", data);
       } else {
-        return await apiRequest("/api/evolution-settings", {
-          method: "POST",
-          body: data,
-        });
+        return await apiRequest("/api/evolution-settings", "POST", data);
       }
     },
     onSuccess: () => {
@@ -97,10 +91,7 @@ function Evolution() {
   // Mutation para criar nova instância
   const createInstance = useMutation({
     mutationFn: async (data: typeof newInstance) => {
-      return await apiRequest("/api/evolution-instances", {
-        method: "POST",
-        body: data,
-      });
+      return await apiRequest("/api/evolution-instances", "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -128,9 +119,7 @@ function Evolution() {
   // Mutation para conectar/desconectar instância
   const toggleConnection = useMutation({
     mutationFn: async ({ id, action }: { id: number; action: 'connect' | 'disconnect' }) => {
-      return await apiRequest(`/api/evolution-instances/${id}/${action}`, {
-        method: "POST",
-      });
+      return await apiRequest(`/api/evolution-instances/${id}/${action}`, "POST");
     },
     onSuccess: () => {
       toast({
@@ -151,9 +140,7 @@ function Evolution() {
   // Mutation para deletar instância
   const deleteInstance = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/evolution-instances/${id}`, {
-        method: "DELETE",
-      });
+      return await apiRequest(`/api/evolution-instances/${id}`, "DELETE");
     },
     onSuccess: () => {
       toast({
@@ -275,8 +262,8 @@ function Evolution() {
               <Input
                 id="apiKey"
                 type={showApiKey ? "text" : "password"}
-                value={globalSettings.apiKey}
-                onChange={(e) => setGlobalSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                value={globalSettings.globalApiKey}
+                onChange={(e) => setGlobalSettings(prev => ({ ...prev, globalApiKey: e.target.value }))}
                 placeholder="••••••••••••••••••••••••••••••"
                 className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pr-10"
               />
