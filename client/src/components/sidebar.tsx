@@ -19,6 +19,7 @@ import BillingForm from "./billing-form";
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Nova Cobrança', action: 'new-billing', icon: Plus },
   { name: 'Agenda', href: '/calendar', icon: Calendar },
   { name: 'Clientes', href: '/customers', icon: Users },
   { name: 'Kanban', href: '/kanban', icon: Columns },
@@ -26,9 +27,7 @@ const navigation = [
   { name: 'Usuários', href: '/users', icon: UserCog },
 ];
 
-const billingSection = [
-  { name: 'Nova Cobrança', action: 'new-billing', icon: Plus },
-];
+
 
 export default function Sidebar() {
   const [location] = useLocation();
@@ -50,22 +49,27 @@ export default function Sidebar() {
           <span className="font-bold text-foreground">BillingSaaS</span>
         </div>
 
-        {/* Nova Cobrança Button */}
-        <div className="px-3 mt-4">
-          <Button 
-            onClick={() => setShowBillingForm(true)}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Cobrança
-          </Button>
-        </div>
+
 
         {/* Navigation */}
-        <nav className="mt-6 px-3">
+        <nav className="mt-8 px-3">
         <div className="space-y-1">
           {navigation.map((item) => {
             const isActive = location === item.href;
+            
+            if (item.action === 'new-billing') {
+              return (
+                <div
+                  key={item.name}
+                  onClick={() => setShowBillingForm(true)}
+                  className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer text-muted-foreground hover:text-foreground hover:bg-accent"
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.name}
+                </div>
+              );
+            }
+            
             return (
               <Link key={item.name} href={item.href}>
                 <div

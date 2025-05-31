@@ -203,6 +203,13 @@ export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
   }),
 }));
 
+export const evolutionInstancesRelations = relations(evolutionInstances, ({ one }) => ({
+  user: one(users, {
+    fields: [evolutionInstances.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
@@ -226,6 +233,13 @@ export const insertMessageTemplateSchema = createInsertSchema(messageTemplates).
 });
 
 export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEvolutionInstanceSchema = createInsertSchema(evolutionInstances).omit({
   id: true,
   userId: true,
   createdAt: true,
