@@ -28,7 +28,10 @@ import {
   Power, 
   PowerOff,
   Search,
-  RefreshCw 
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Save
 } from "lucide-react";
 import { EvolutionInstance, EvolutionSettings } from "@shared/schema";
 
@@ -36,16 +39,16 @@ function Evolution() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewInstanceDialog, setShowNewInstanceDialog] = useState(false);
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [globalSettings, setGlobalSettings] = useState({
+    baseUrl: "https://evolutionapi3.m2vendas.com.br",
+    apiKey: ""
+  });
   const [newInstance, setNewInstance] = useState({
     instanceName: "",
     channel: "baileys",
     token: "",
     phoneNumber: ""
-  });
-  const [globalSettings, setGlobalSettings] = useState({
-    globalApiUrl: "https://evolutionapi3.m2vendas.com.br",
-    globalApiKey: ""
   });
 
   // Buscar configurações globais
@@ -55,46 +58,55 @@ function Evolution() {
   });
 
   // Buscar instâncias
-  const { data: instances = [], refetch } = useQuery<EvolutionInstance[]>({
+  const { data: instances = [], isLoading: instancesLoading } = useQuery<EvolutionInstance[]>({
     queryKey: ["/api/evolution-instances"],
-    enabled: !!settings, // Só busca instâncias se as configurações estão definidas
+    retry: false,
   });
 
   // Mutation para salvar configurações globais
-  const saveSettingsMutation = useMutation({
-    mutationFn: async (data: { globalApiUrl: string; globalApiKey: string }) => {
-      const url = settings ? `/api/evolution-settings/${settings.id}` : "/api/evolution-settings";
-      const method = settings ? "PUT" : "POST";
-      await apiRequest(url, method, data);
+  const saveGlobalSettings = useMutation({
+    mutationFn: async (data: { baseUrl: string; apiKey: string }) => {
+      if (settings?.id) {
+        return await apiRequest(`/api/evolution-settings/${settings.id}`, {
+          method: "PATCH",
+          body: data,
+        });
+      } else {
+        return await apiRequest("/api/evolution-settings", {
+          method: "POST",
+          body: data,
+        });
+      }
     },
     onSuccess: () => {
       toast({
         title: "Configurações salvas",
-        description: "Configurações globais da Evolution API foram salvas com sucesso.",
+        description: "As configurações globais da Evolution API foram salvas com sucesso.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/evolution-settings"] });
-      setShowSettingsDialog(false);
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Falha ao salvar configurações.",
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações.",
         variant: "destructive",
       });
     },
   });
 
-  // Mutation para criar instância
-  const createInstanceMutation = useMutation({
+  // Mutation para criar nova instância
+  const createInstance = useMutation({
     mutationFn: async (data: typeof newInstance) => {
-      await apiRequest("/api/evolution-instances", "POST", data);
+      return await apiRequest("/api/evolution-instances", {
+        method: "POST",
+        body: data,
+      });
     },
     onSuccess: () => {
       toast({
         title: "Instância criada",
-        description: "Nova instância foi criada com sucesso.",
+        description: "Nova instância criada com sucesso.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
       setShowNewInstanceDialog(false);
       setNewInstance({
         instanceName: "",
@@ -102,379 +114,374 @@ function Evolution() {
         token: "",
         phoneNumber: ""
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Falha ao criar instância.",
+        title: "Erro ao criar instância",
+        description: "Não foi possível criar a instância.",
         variant: "destructive",
       });
     },
   });
 
   // Mutation para conectar/desconectar instância
-  const toggleInstanceMutation = useMutation({
-    mutationFn: async ({ id, action }: { id: number; action: "connect" | "disconnect" }) => {
-      await apiRequest(`/api/evolution-instances/${id}/${action}`, "PATCH");
+  const toggleConnection = useMutation({
+    mutationFn: async ({ id, action }: { id: number; action: 'connect' | 'disconnect' }) => {
+      return await apiRequest(`/api/evolution-instances/${id}/${action}`, {
+        method: "POST",
+      });
     },
     onSuccess: () => {
+      toast({
+        title: "Status atualizado",
+        description: "Status da instância atualizado com sucesso.",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
     },
     onError: (error) => {
       toast({
         title: "Erro",
-        description: "Falha ao alterar status da instância.",
+        description: "Não foi possível alterar o status da instância.",
         variant: "destructive",
       });
     },
   });
 
-  // Mutation para excluir instância
-  const deleteInstanceMutation = useMutation({
+  // Mutation para deletar instância
+  const deleteInstance = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/evolution-instances/${id}`, "DELETE");
+      return await apiRequest(`/api/evolution-instances/${id}`, {
+        method: "DELETE",
+      });
     },
     onSuccess: () => {
       toast({
-        title: "Instância excluída",
-        description: "Instância foi excluída com sucesso.",
+        title: "Instância removida",
+        description: "Instância removida com sucesso.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Falha ao excluir instância.",
+        title: "Erro ao remover",
+        description: "Não foi possível remover a instância.",
         variant: "destructive",
       });
     },
   });
 
-  const handleSaveSettings = () => {
-    if (!globalSettings.globalApiUrl || !globalSettings.globalApiKey) {
+  const handleSaveGlobalSettings = () => {
+    if (!globalSettings.baseUrl.trim()) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha a URL da API e a chave global.",
+        title: "URL obrigatória",
+        description: "Por favor, insira a URL base da Evolution API.",
         variant: "destructive",
       });
       return;
     }
-    saveSettingsMutation.mutate(globalSettings);
+
+    if (!globalSettings.apiKey.trim()) {
+      toast({
+        title: "Chave API obrigatória",
+        description: "Por favor, insira a chave global da API.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    saveGlobalSettings.mutate(globalSettings);
   };
 
   const handleCreateInstance = () => {
-    if (!newInstance.instanceName || !newInstance.token) {
+    if (!newInstance.instanceName.trim()) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha o nome da instância e o token.",
+        title: "Nome obrigatório",
+        description: "Por favor, insira o nome da instância.",
         variant: "destructive",
       });
       return;
     }
-    createInstanceMutation.mutate(newInstance);
+
+    if (!newInstance.token.trim()) {
+      toast({
+        title: "Token obrigatório",
+        description: "Por favor, insira o token da instância.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createInstance.mutate(newInstance);
   };
 
   const filteredInstances = instances.filter(instance =>
     instance.instanceName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Se não há configurações globais, mostrar tela de configuração
-  if (!settings) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md bg-gray-800 border-gray-700">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-white flex items-center justify-center gap-2">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <div className="w-4 h-4 bg-white rounded-full"></div>
-              </div>
-              Evolution Manager
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="apiUrl" className="text-gray-300">URL da API</Label>
-              <Input
-                id="apiUrl"
-                value={globalSettings.globalApiUrl}
-                onChange={(e) => setGlobalSettings(prev => ({ ...prev, globalApiUrl: e.target.value }))}
-                placeholder="https://evolutionapi3.m2vendas.com.br"
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="apiKey" className="text-gray-300">Chave Global da API</Label>
-              <Input
-                id="apiKey"
-                type="password"
-                value={globalSettings.globalApiKey}
-                onChange={(e) => setGlobalSettings(prev => ({ ...prev, globalApiKey: e.target.value }))}
-                placeholder="Sua chave global da Evolution API"
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-            <Button 
-              onClick={handleSaveSettings}
-              disabled={saveSettingsMutation.isPending}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              {saveSettingsMutation.isPending ? "Salvando..." : "Salvar Configurações"}
-            </Button>
-            <p className="text-xs text-gray-400 text-center">
-              Configure a URL e chave global da Evolution API para começar a gerenciar suas instâncias.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // Carregar configurações existentes
+  if (settings && globalSettings.baseUrl === "https://evolutionapi3.m2vendas.com.br" && !globalSettings.apiKey) {
+    setGlobalSettings({
+      baseUrl: settings.baseUrl || "https://evolutionapi3.m2vendas.com.br",
+      apiKey: settings.apiKey || ""
+    });
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-              <div className="w-4 h-4 bg-white rounded-full"></div>
-            </div>
-            <h1 className="text-xl font-semibold">Evolution Manager</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSettingsDialog(true)}
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Evolution API</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Configure os parâmetros globais para integração com a Evolution API. Estas configurações serão usadas para todas as instâncias do WhatsApp.
+          </p>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="p-6">
-        {/* Controls */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold">Instâncias</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Pesquisar"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-600 text-white w-64"
-              />
-            </div>
+      {/* Configurações Globais */}
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+            <Settings className="w-5 h-5" />
+            Configurações da Evolution API
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="baseUrl" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              URL Base da Evolution API
+            </Label>
+            <Input
+              id="baseUrl"
+              type="text"
+              value={globalSettings.baseUrl}
+              onChange={(e) => setGlobalSettings(prev => ({ ...prev, baseUrl: e.target.value }))}
+              placeholder="https://evolutionapi3.m2vendas.com.br"
+              className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Insira a URL completa da sua instância da Evolution API, incluindo o protocolo (http:// ou https://)
+            </p>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="apiKey" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              Chave Global da API
+            </Label>
+            <div className="relative">
+              <Input
+                id="apiKey"
+                type={showApiKey ? "text" : "password"}
+                value={globalSettings.apiKey}
+                onChange={(e) => setGlobalSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                placeholder="••••••••••••••••••••••••••••••"
+                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowApiKey(!showApiKey)}
+              >
+                {showApiKey ? (
+                  <EyeOff className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-400" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Esta é a chave de autenticação global para acessar a Evolution API
+            </p>
+          </div>
+
           <Button
-            onClick={() => setShowNewInstanceDialog(true)}
-            className="bg-green-600 hover:bg-green-700"
+            onClick={handleSaveGlobalSettings}
+            className="w-full bg-slate-800 hover:bg-slate-700 text-white"
+            disabled={saveGlobalSettings.isPending}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Instância +
+            <Save className="w-4 h-4 mr-2" />
+            {saveGlobalSettings.isPending ? "Salvando..." : "Salvar Configurações"}
           </Button>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Instances Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredInstances.map((instance) => (
-            <Card key={instance.id} className="bg-gray-800 border-gray-700">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-medium text-white truncate">{instance.instanceName}</h3>
-                  <Settings className="w-4 h-4 text-gray-400 cursor-pointer hover:text-white" />
-                </div>
-                
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                      <span className="text-xs text-white">
-                        {instance.phoneNumber ? instance.phoneNumber.slice(-4) : "----"}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-300">{instance.phoneNumber || "Não conectado"}</p>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <span>{instance.status === "connected" ? "Conectado" : "Desconectado"}</span>
-                      </div>
-                    </div>
-                  </div>
+      {/* Lista de Instâncias */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Instâncias WhatsApp</h2>
+          <Dialog open={showNewInstanceDialog} onOpenChange={setShowNewInstanceDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Instância
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              <DialogHeader>
+                <DialogTitle className="text-gray-900 dark:text-white">Nova Instância WhatsApp</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="instanceName" className="text-gray-700 dark:text-gray-300">Nome da Instância</Label>
+                  <Input
+                    id="instanceName"
+                    value={newInstance.instanceName}
+                    onChange={(e) => setNewInstance(prev => ({ ...prev, instanceName: e.target.value }))}
+                    placeholder="Ex: WhatsApp Vendas"
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Badge 
-                    variant={instance.isConnected ? "default" : "secondary"}
-                    className={instance.isConnected ? "bg-green-600" : "bg-red-600"}
+                <div className="space-y-2">
+                  <Label htmlFor="channel" className="text-gray-700 dark:text-gray-300">Canal</Label>
+                  <Select value={newInstance.channel} onValueChange={(value) => setNewInstance(prev => ({ ...prev, channel: value }))}>
+                    <SelectTrigger className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="baileys">Baileys</SelectItem>
+                      <SelectItem value="whatsapp-web">WhatsApp Web</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="token" className="text-gray-700 dark:text-gray-300">Token</Label>
+                  <Input
+                    id="token"
+                    value={newInstance.token}
+                    onChange={(e) => setNewInstance(prev => ({ ...prev, token: e.target.value }))}
+                    placeholder="Token de autenticação"
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber" className="text-gray-700 dark:text-gray-300">Número (Opcional)</Label>
+                  <Input
+                    id="phoneNumber"
+                    value={newInstance.phoneNumber}
+                    onChange={(e) => setNewInstance(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    placeholder="5511999999999"
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    onClick={handleCreateInstance}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={createInstance.isPending}
                   >
-                    {instance.isConnected ? "Conectado" : "Desconectado"}
-                  </Badge>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => toggleInstanceMutation.mutate({
-                        id: instance.id,
-                        action: instance.isConnected ? "disconnect" : "connect"
-                      })}
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                    >
-                      {instance.isConnected ? <PowerOff className="w-3 h-3" /> : <Power className="w-3 h-3" />}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteInstanceMutation.mutate(instance.id)}
-                      className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
+                    {createInstance.isPending ? "Criando..." : "Criar Instância"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowNewInstanceDialog(false)}
+                    className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancelar
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        {filteredInstances.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">Nenhuma instância encontrada</p>
-            <Button
-              onClick={() => setShowNewInstanceDialog(true)}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Criar primeira instância
-            </Button>
+        {/* Barra de Pesquisa */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Pesquisar instâncias..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+          />
+        </div>
+
+        {/* Grid de Instâncias */}
+        {instancesLoading ? (
+          <div className="flex justify-center py-8">
+            <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+          </div>
+        ) : filteredInstances.length === 0 ? (
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <CardContent className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">
+                {searchTerm ? "Nenhuma instância encontrada para sua pesquisa." : "Nenhuma instância criada ainda."}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredInstances.map((instance) => (
+              <Card key={instance.id} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg text-gray-900 dark:text-white">{instance.instanceName}</CardTitle>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{instance.channel}</p>
+                    </div>
+                    <Badge 
+                      variant={instance.isConnected ? "default" : "secondary"}
+                      className={instance.isConnected ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"}
+                    >
+                      {instance.isConnected ? "Conectado" : "Desconectado"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {instance.phoneNumber && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <strong>Número:</strong> {instance.phoneNumber}
+                    </p>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={instance.isConnected ? "destructive" : "default"}
+                      onClick={() => toggleConnection.mutate({ 
+                        id: instance.id, 
+                        action: instance.isConnected ? 'disconnect' : 'connect' 
+                      })}
+                      className="flex-1"
+                      disabled={toggleConnection.isPending}
+                    >
+                      {instance.isConnected ? (
+                        <>
+                          <PowerOff className="w-4 h-4 mr-1" />
+                          Desconectar
+                        </>
+                      ) : (
+                        <>
+                          <Power className="w-4 h-4 mr-1" />
+                          Conectar
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => deleteInstance.mutate(instance.id)}
+                      className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900"
+                      disabled={deleteInstance.isPending}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </div>
-
-      {/* Dialog Nova Instância */}
-      <Dialog open={showNewInstanceDialog} onOpenChange={setShowNewInstanceDialog}>
-        <DialogContent className="bg-gray-800 border-gray-700 text-white">
-          <DialogHeader>
-            <DialogTitle>Nova Instância</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="instanceName" className="text-gray-300">Nome *</Label>
-              <Input
-                id="instanceName"
-                value={newInstance.instanceName}
-                onChange={(e) => setNewInstance(prev => ({ ...prev, instanceName: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="channel" className="text-gray-300">Canal</Label>
-              <Select
-                value={newInstance.channel}
-                onValueChange={(value) => setNewInstance(prev => ({ ...prev, channel: value }))}
-              >
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-700 border-gray-600">
-                  <SelectItem value="baileys">Baileys</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="token" className="text-gray-300">Token *</Label>
-              <Input
-                id="token"
-                value={newInstance.token}
-                onChange={(e) => setNewInstance(prev => ({ ...prev, token: e.target.value }))}
-                placeholder="Token da instância"
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber" className="text-gray-300">Número</Label>
-              <Input
-                id="phoneNumber"
-                value={newInstance.phoneNumber}
-                onChange={(e) => setNewInstance(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                placeholder="Número do WhatsApp"
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button
-                onClick={handleCreateInstance}
-                disabled={createInstanceMutation.isPending}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                {createInstanceMutation.isPending ? "Salvando..." : "Salvar"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowNewInstanceDialog(false)}
-                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog Configurações */}
-      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-        <DialogContent className="bg-gray-800 border-gray-700 text-white">
-          <DialogHeader>
-            <DialogTitle>Configurações da API</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="apiUrl" className="text-gray-300">URL da API</Label>
-              <Input
-                id="apiUrl"
-                value={globalSettings.globalApiUrl}
-                onChange={(e) => setGlobalSettings(prev => ({ ...prev, globalApiUrl: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="apiKey" className="text-gray-300">Chave Global da API</Label>
-              <Input
-                id="apiKey"
-                type="password"
-                value={globalSettings.globalApiKey}
-                onChange={(e) => setGlobalSettings(prev => ({ ...prev, globalApiKey: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button
-                onClick={handleSaveSettings}
-                disabled={saveSettingsMutation.isPending}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                {saveSettingsMutation.isPending ? "Salvando..." : "Salvar"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowSettingsDialog(false)}
-                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
