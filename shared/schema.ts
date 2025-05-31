@@ -115,18 +115,27 @@ export const calendarEvents = pgTable("calendar_events", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Evolution API global settings table
+export const evolutionSettings = pgTable("evolution_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  globalApiUrl: varchar("global_api_url").notNull(),
+  globalApiKey: varchar("global_api_key").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Evolution API instances table
 export const evolutionInstances = pgTable("evolution_instances", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  name: varchar("name").notNull(),
-  baseUrl: varchar("base_url").notNull(),
-  apiKey: varchar("api_key").notNull(),
   instanceName: varchar("instance_name").notNull(),
-  webhookUrl: varchar("webhook_url"),
-  description: text("description"),
-  status: varchar("status").default("inactive"),
-  isDefault: boolean("is_default").default(false),
+  channel: varchar("channel").default("baileys"),
+  token: varchar("token").notNull(),
+  phoneNumber: varchar("phone_number"),
+  status: varchar("status").default("disconnected"),
+  isConnected: boolean("is_connected").default(false),
+  qrCode: text("qr_code"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -145,7 +154,7 @@ export const billingTypes = pgTable("billing_types", {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   customers: many(customers),
   billings: many(billings),
   messageTemplates: many(messageTemplates),
@@ -153,6 +162,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   calendarEvents: many(calendarEvents),
   evolutionInstances: many(evolutionInstances),
   billingTypes: many(billingTypes),
+  evolutionSettings: one(evolutionSettings),
 }));
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
@@ -224,6 +234,13 @@ export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
   }),
 }));
 
+export const evolutionSettingsRelations = relations(evolutionSettings, ({ one }) => ({
+  user: one(users, {
+    fields: [evolutionSettings.userId],
+    references: [users.id],
+  }),
+}));
+
 export const evolutionInstancesRelations = relations(evolutionInstances, ({ one }) => ({
   user: one(users, {
     fields: [evolutionInstances.userId],
@@ -268,6 +285,13 @@ export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit
   updatedAt: true,
 });
 
+export const insertEvolutionSettingsSchema = createInsertSchema(evolutionSettings).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertEvolutionInstanceSchema = createInsertSchema(evolutionInstances).omit({
   id: true,
   userId: true,
@@ -293,6 +317,8 @@ export type InsertMessageTemplate = z.infer<typeof insertMessageTemplateSchema>;
 export type MessageTemplate = typeof messageTemplates.$inferSelect;
 export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
 export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertEvolutionSettings = z.infer<typeof insertEvolutionSettingsSchema>;
+export type EvolutionSettings = typeof evolutionSettings.$inferSelect;
 export type InsertEvolutionInstance = z.infer<typeof insertEvolutionInstanceSchema>;
 export type EvolutionInstance = typeof evolutionInstances.$inferSelect;
 export type InsertBillingType = z.infer<typeof insertBillingTypeSchema>;
