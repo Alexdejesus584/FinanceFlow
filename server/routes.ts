@@ -204,6 +204,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Evolution API instances routes
+  app.get('/api/evolution-instances', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const instances = await storage.getEvolutionInstances(userId);
+      res.json(instances);
+    } catch (error) {
+      console.error("Error fetching evolution instances:", error);
+      res.status(500).json({ message: "Failed to fetch evolution instances" });
+    }
+  });
+
+  app.post('/api/evolution-instances', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validatedData = insertEvolutionInstanceSchema.parse(req.body);
+      
+      const instance = await storage.createEvolutionInstance({
+        ...validatedData,
+        userId,
+      });
+      
+      res.status(201).json(instance);
+    } catch (error) {
+      console.error("Error creating evolution instance:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create evolution instance" });
+      }
+    }
+  });
+
+  app.put('/api/evolution-instances/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      const validatedData = insertEvolutionInstanceSchema.partial().parse(req.body);
+      
+      const instance = await storage.updateEvolutionInstance(id, validatedData, userId);
+      
+      if (!instance) {
+        return res.status(404).json({ message: "Evolution instance not found" });
+      }
+      
+      res.json(instance);
+    } catch (error) {
+      console.error("Error updating evolution instance:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update evolution instance" });
+      }
+    }
+  });
+
+  app.delete('/api/evolution-instances/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteEvolutionInstance(id, userId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Evolution instance not found" });
+      }
+      
+      res.json({ message: "Evolution instance deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting evolution instance:", error);
+      res.status(500).json({ message: "Failed to delete evolution instance" });
+    }
+  });
+
+  app.patch('/api/evolution-instances/:id/set-default', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      const success = await storage.setDefaultEvolutionInstance(id, userId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Evolution instance not found" });
+      }
+      
+      res.json({ message: "Default evolution instance set successfully" });
+    } catch (error) {
+      console.error("Error setting default evolution instance:", error);
+      res.status(500).json({ message: "Failed to set default evolution instance" });
+    }
+  });
+
   // Message template routes
   app.get('/api/message-templates', isAuthenticated, async (req: any, res) => {
     try {

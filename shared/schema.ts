@@ -123,6 +123,8 @@ export const evolutionInstances = pgTable("evolution_instances", {
   baseUrl: varchar("base_url").notNull(),
   apiKey: varchar("api_key").notNull(),
   instanceName: varchar("instance_name").notNull(),
+  webhookUrl: varchar("webhook_url"),
+  description: text("description"),
   status: varchar("status").default("inactive"),
   isDefault: boolean("is_default").default(false),
   createdAt: timestamp("created_at").defaultNow(),

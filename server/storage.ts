@@ -446,6 +446,59 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(billingTypes.id, id), eq(billingTypes.userId, userId)));
     return (result.rowCount || 0) > 0;
   }
+
+  // Evolution API instances operations
+  async getEvolutionInstances(userId: string): Promise<EvolutionInstance[]> {
+    return await db.select().from(evolutionInstances).where(eq(evolutionInstances.userId, userId));
+  }
+
+  async getEvolutionInstance(id: number, userId: string): Promise<EvolutionInstance | undefined> {
+    const [instance] = await db
+      .select()
+      .from(evolutionInstances)
+      .where(and(eq(evolutionInstances.id, id), eq(evolutionInstances.userId, userId)));
+    return instance;
+  }
+
+  async createEvolutionInstance(instance: InsertEvolutionInstance & { userId: string }): Promise<EvolutionInstance> {
+    const [newInstance] = await db
+      .insert(evolutionInstances)
+      .values(instance)
+      .returning();
+    return newInstance;
+  }
+
+  async updateEvolutionInstance(id: number, instance: Partial<InsertEvolutionInstance>, userId: string): Promise<EvolutionInstance | undefined> {
+    const [updatedInstance] = await db
+      .update(evolutionInstances)
+      .set({ ...instance, updatedAt: new Date() })
+      .where(and(eq(evolutionInstances.id, id), eq(evolutionInstances.userId, userId)))
+      .returning();
+    return updatedInstance;
+  }
+
+  async deleteEvolutionInstance(id: number, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(evolutionInstances)
+      .where(and(eq(evolutionInstances.id, id), eq(evolutionInstances.userId, userId)));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async setDefaultEvolutionInstance(id: number, userId: string): Promise<boolean> {
+    // First, set all instances to not default
+    await db
+      .update(evolutionInstances)
+      .set({ isDefault: false })
+      .where(eq(evolutionInstances.userId, userId));
+
+    // Then set the specified instance as default
+    const result = await db
+      .update(evolutionInstances)
+      .set({ isDefault: true })
+      .where(and(eq(evolutionInstances.id, id), eq(evolutionInstances.userId, userId)));
+    
+    return (result.rowCount || 0) > 0;
+  }
 }
 
 export const storage = new DatabaseStorage();
