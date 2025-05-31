@@ -71,7 +71,24 @@ export class EvolutionAPIClient {
 
   // Criar uma nova instância
   async createInstance(instanceData: CreateInstanceRequest): Promise<InstanceInfo> {
-    return await this.makeRequest('/instance/create', 'POST', instanceData);
+    // Preparar dados limpos sem campos opcionais undefined
+    const cleanData: any = {
+      instanceName: instanceData.instanceName
+    };
+    
+    if (instanceData.token) {
+      cleanData.token = instanceData.token;
+    }
+    
+    if (instanceData.qrcode !== undefined) {
+      cleanData.qrcode = instanceData.qrcode;
+    }
+    
+    if (instanceData.number) {
+      cleanData.number = instanceData.number;
+    }
+    
+    return await this.makeRequest('/instance/create', 'POST', cleanData);
   }
 
   // Obter informações de uma instância

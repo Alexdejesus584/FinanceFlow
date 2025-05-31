@@ -400,13 +400,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         globalApiKey: settings.globalApiKey.trim()
       });
 
-      // Criar instância na Evolution API
+      // Criar instância na Evolution API - usando apenas parâmetros básicos
       const instanceData = {
-        instanceName: instanceName,
-        token: token || undefined,
-        qrcode: true,
-        number: phoneNumber || undefined
+        instanceName: instanceName
       };
+      
+      // Adicionar token apenas se fornecido
+      if (token && token.trim()) {
+        instanceData.token = token.trim();
+      }
 
       console.log("Creating Evolution API instance:", instanceData);
       const evolutionResponse = await evolutionClient.createInstance(instanceData);
