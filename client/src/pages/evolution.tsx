@@ -87,10 +87,7 @@ export default function Evolution() {
   // Mutation para criar instância
   const createInstanceMutation = useMutation({
     mutationFn: async (data: typeof newInstance) => {
-      await apiRequest("/api/evolution-instances", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      await apiRequest("/api/evolution-instances", "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -118,9 +115,7 @@ export default function Evolution() {
   // Mutation para conectar/desconectar instância
   const toggleInstanceMutation = useMutation({
     mutationFn: async ({ id, action }: { id: number; action: "connect" | "disconnect" }) => {
-      await apiRequest(`/api/evolution-instances/${id}/${action}`, {
-        method: "POST",
-      });
+      await apiRequest(`/api/evolution-instances/${id}/${action}`, "PATCH");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
@@ -137,9 +132,7 @@ export default function Evolution() {
   // Mutation para excluir instância
   const deleteInstanceMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/evolution-instances/${id}`, {
-        method: "DELETE",
-      });
+      await apiRequest(`/api/evolution-instances/${id}`, "DELETE");
     },
     onSuccess: () => {
       toast({

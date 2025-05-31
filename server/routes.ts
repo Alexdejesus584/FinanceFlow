@@ -206,6 +206,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Evolution API settings routes
+  app.get('/api/evolution-settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getEvolutionSettings(userId);
+      res.json(settings || null);
+    } catch (error) {
+      console.error("Error fetching evolution settings:", error);
+      res.status(500).json({ message: "Failed to fetch evolution settings" });
+    }
+  });
+
+  app.post('/api/evolution-settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validatedData = insertEvolutionSettingsSchema.parse(req.body);
+      
+      const settings = await storage.createEvolutionSettings({
+        ...validatedData,
+        userId,
+      });
+      
+      res.status(201).json(settings);
+    } catch (error) {
+      console.error("Error creating evolution settings:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create evolution settings" });
+      }
+    }
+  });
+
+  app.put('/api/evolution-settings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      const validatedData = insertEvolutionSettingsSchema.partial().parse(req.body);
+      
+      const settings = await storage.updateEvolutionSettings(id, validatedData, userId);
+      
+      if (!settings) {
+        return res.status(404).json({ message: "Evolution settings not found" });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating evolution settings:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update evolution settings" });
+      }
+    }
+  });
+
   // Evolution API instances routes
   app.get('/api/evolution-instances', isAuthenticated, async (req: any, res) => {
     try {
