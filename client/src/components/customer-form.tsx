@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -53,15 +53,40 @@ export default function CustomerForm({ open, onClose, customer }: CustomerFormPr
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: customer?.name || "",
-      email: customer?.email || "",
-      phone: customer?.phone || "",
-      cpfCnpj: customer?.cpfCnpj || "",
-      pixKey: customer?.pixKey || "",
-      notes: customer?.notes || "",
-      status: customer?.status || "active",
+      name: "",
+      email: "",
+      phone: "",
+      cpfCnpj: "",
+      pixKey: "",
+      notes: "",
+      status: "active",
     },
   });
+
+  // Atualiza os valores do formulário quando o cliente muda
+  useEffect(() => {
+    if (customer) {
+      form.reset({
+        name: customer.name || "",
+        email: customer.email || "",
+        phone: customer.phone || "",
+        cpfCnpj: customer.cpfCnpj || "",
+        pixKey: customer.pixKey || "",
+        notes: customer.notes || "",
+        status: customer.status || "active",
+      });
+    } else {
+      form.reset({
+        name: "",
+        email: "",
+        phone: "",
+        cpfCnpj: "",
+        pixKey: "",
+        notes: "",
+        status: "active",
+      });
+    }
+  }, [customer, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
