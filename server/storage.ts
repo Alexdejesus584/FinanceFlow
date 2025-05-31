@@ -345,17 +345,17 @@ export class DatabaseStorage implements IStorage {
     overdueBillings: number;
   }> {
     const [customersCount] = await db
-      .select({ count: db.count() })
+      .select({ count: count() })
       .from(customers)
       .where(eq(customers.userId, userId));
 
     const [activeBillingsCount] = await db
-      .select({ count: db.count() })
+      .select({ count: count() })
       .from(billings)
       .where(and(eq(billings.userId, userId), eq(billings.status, 'pending')));
 
     const [overdueBillingsCount] = await db
-      .select({ count: db.count() })
+      .select({ count: count() })
       .from(billings)
       .where(
         and(
@@ -369,23 +369,23 @@ export class DatabaseStorage implements IStorage {
     const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-    const monthlyRevenue = await db
-      .select({ sum: db.sum(billings.amount) })
+    const [monthlyRevenue] = await db
+      .select({ sum: sql<number>`COALESCE(SUM(${billings.amount}::numeric), 0)` })
       .from(billings)
       .where(
         and(
           eq(billings.userId, userId),
           eq(billings.status, 'paid'),
-          gte(billings.paidAt, firstDay),
-          lte(billings.paidAt, lastDay)
+          gte(billings.paidAt, firstDay.toISOString()),
+          lte(billings.paidAt, lastDay.toISOString())
         )
       );
 
     return {
-      totalCustomers: customersCount.count,
-      activeBillings: activeBillingsCount.count,
-      monthlyRevenue: Number(monthlyRevenue[0]?.sum || 0),
-      overdueBillings: overdueBillingsCount.count,
+      totalCustomers: customersCount?.count || 0,
+      activeBillings: activeBillingsCount?.count || 0,
+      monthlyRevenue: Number(monthlyRevenue?.sum || 0),
+      overdueBillings: overdueBillingsCount?.count || 0,
     };
   }
 }
