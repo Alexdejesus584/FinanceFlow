@@ -71,6 +71,14 @@ export interface IStorage {
   updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>, userId: string): Promise<CalendarEvent | undefined>;
   deleteCalendarEvent(id: number, userId: string): Promise<boolean>;
 
+  // Evolution API instances operations
+  getEvolutionInstances(userId: string): Promise<EvolutionInstance[]>;
+  getEvolutionInstance(id: number, userId: string): Promise<EvolutionInstance | undefined>;
+  createEvolutionInstance(instance: InsertEvolutionInstance & { userId: string }): Promise<EvolutionInstance>;
+  updateEvolutionInstance(id: number, instance: Partial<InsertEvolutionInstance>, userId: string): Promise<EvolutionInstance | undefined>;
+  deleteEvolutionInstance(id: number, userId: string): Promise<boolean>;
+  setDefaultEvolutionInstance(id: number, userId: string): Promise<boolean>;
+
   // Dashboard statistics
   getDashboardStats(userId: string): Promise<{
     totalCustomers: number;
