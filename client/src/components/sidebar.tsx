@@ -20,7 +20,7 @@ import BillingForm from "./billing-form";
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Nova Cobrança', action: 'new-billing', icon: Plus },
+  { name: 'Adicionar Cobranças', action: 'new-billing', icon: Plus },
   { name: 'Agenda', href: '/calendar', icon: Calendar },
   { name: 'Clientes', href: '/customers', icon: Users },
   { name: 'Kanban', href: '/kanban', icon: Columns },

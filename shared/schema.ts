@@ -58,6 +58,7 @@ export const billings = pgTable("billings", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  billingTypeId: integer("billing_type_id").references(() => billingTypes.id),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   description: varchar("description").notNull(),
   dueDate: date("due_date").notNull(),
@@ -128,6 +129,19 @@ export const evolutionInstances = pgTable("evolution_instances", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Billing types table for custom billing types
+export const billingTypes = pgTable("billing_types", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  defaultAmount: decimal("default_amount", { precision: 10, scale: 2 }),
+  color: varchar("color").default("#8B5CF6"), // Purple default
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   customers: many(customers),
@@ -136,6 +150,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   messageHistory: many(messageHistory),
   calendarEvents: many(calendarEvents),
   evolutionInstances: many(evolutionInstances),
+  billingTypes: many(billingTypes),
 }));
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
@@ -155,6 +170,10 @@ export const billingsRelations = relations(billings, ({ one, many }) => ({
   customer: one(customers, {
     fields: [billings.customerId],
     references: [customers.id],
+  }),
+  billingType: one(billingTypes, {
+    fields: [billings.billingTypeId],
+    references: [billingTypes.id],
   }),
   parentBilling: one(billings, {
     fields: [billings.parentBillingId],
@@ -210,6 +229,14 @@ export const evolutionInstancesRelations = relations(evolutionInstances, ({ one 
   }),
 }));
 
+export const billingTypesRelations = relations(billingTypes, ({ one, many }) => ({
+  user: one(users, {
+    fields: [billingTypes.userId],
+    references: [users.id],
+  }),
+  billings: many(billings),
+}));
+
 // Insert schemas
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
@@ -240,6 +267,13 @@ export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit
 });
 
 export const insertEvolutionInstanceSchema = createInsertSchema(evolutionInstances).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBillingTypeSchema = createInsertSchema(billingTypes).omit({
   id: true,
   userId: true,
   createdAt: true,
