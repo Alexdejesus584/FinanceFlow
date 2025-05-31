@@ -513,20 +513,30 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  async setDefaultEvolutionInstance(id: number, userId: string): Promise<boolean> {
-    // First, set all instances to not default
-    await db
+  async connectEvolutionInstance(id: number, userId: string): Promise<boolean> {
+    const [updatedInstance] = await db
       .update(evolutionInstances)
-      .set({ isDefault: false })
-      .where(eq(evolutionInstances.userId, userId));
+      .set({ 
+        isConnected: true, 
+        status: "connected", 
+        updatedAt: new Date() 
+      })
+      .where(and(eq(evolutionInstances.id, id), eq(evolutionInstances.userId, userId)))
+      .returning();
+    return !!updatedInstance;
+  }
 
-    // Then set the specified instance as default
-    const result = await db
+  async disconnectEvolutionInstance(id: number, userId: string): Promise<boolean> {
+    const [updatedInstance] = await db
       .update(evolutionInstances)
-      .set({ isDefault: true })
-      .where(and(eq(evolutionInstances.id, id), eq(evolutionInstances.userId, userId)));
-    
-    return (result.rowCount || 0) > 0;
+      .set({ 
+        isConnected: false, 
+        status: "disconnected", 
+        updatedAt: new Date() 
+      })
+      .where(and(eq(evolutionInstances.id, id), eq(evolutionInstances.userId, userId)))
+      .returning();
+    return !!updatedInstance;
   }
 }
 

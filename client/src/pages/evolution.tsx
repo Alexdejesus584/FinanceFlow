@@ -65,10 +65,7 @@ export default function Evolution() {
     mutationFn: async (data: { globalApiUrl: string; globalApiKey: string }) => {
       const url = settings ? `/api/evolution-settings/${settings.id}` : "/api/evolution-settings";
       const method = settings ? "PUT" : "POST";
-      await apiRequest(url, {
-        method,
-        body: JSON.stringify(data),
-      });
+      await apiRequest(url, method, data);
     },
     onSuccess: () => {
       toast({

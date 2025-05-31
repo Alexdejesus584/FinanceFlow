@@ -7,7 +7,8 @@ import {
   insertBillingSchema, 
   insertMessageTemplateSchema,
   insertCalendarEventSchema,
-  insertEvolutionInstanceSchema 
+  insertEvolutionInstanceSchema,
+  insertEvolutionSettingsSchema 
 } from "@shared/schema";
 import { z } from "zod";
 import { emailService } from "./email-service";
@@ -278,20 +279,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/evolution-instances/:id/set-default', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/evolution-instances/:id/connect', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
-      const success = await storage.setDefaultEvolutionInstance(id, userId);
+      const success = await storage.connectEvolutionInstance(id, userId);
       
       if (!success) {
         return res.status(404).json({ message: "Evolution instance not found" });
       }
       
-      res.json({ message: "Default evolution instance set successfully" });
+      res.json({ message: "Evolution instance connected successfully" });
     } catch (error) {
-      console.error("Error setting default evolution instance:", error);
-      res.status(500).json({ message: "Failed to set default evolution instance" });
+      console.error("Error connecting evolution instance:", error);
+      res.status(500).json({ message: "Failed to connect evolution instance" });
+    }
+  });
+
+  app.patch('/api/evolution-instances/:id/disconnect', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      const success = await storage.disconnectEvolutionInstance(id, userId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Evolution instance not found" });
+      }
+      
+      res.json({ message: "Evolution instance disconnected successfully" });
+    } catch (error) {
+      console.error("Error disconnecting evolution instance:", error);
+      res.status(500).json({ message: "Failed to disconnect evolution instance" });
     }
   });
 
