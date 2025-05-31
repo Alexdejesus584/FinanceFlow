@@ -18,7 +18,7 @@ import {
   type InsertCalendarEvent,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, gte, lte, or } from "drizzle-orm";
+import { eq, and, desc, asc, gte, lte, or, sql, count } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - required for Replit Auth
