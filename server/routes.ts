@@ -221,17 +221,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/evolution-settings', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log("Creating evolution settings for user:", userId);
+      console.log("Request body:", req.body);
+      
       const validatedData = insertEvolutionSettingsSchema.parse(req.body);
+      console.log("Validated data:", validatedData);
       
       const settings = await storage.createEvolutionSettings({
         ...validatedData,
         userId,
       });
       
+      console.log("Settings created successfully:", settings);
       res.status(201).json(settings);
     } catch (error) {
       console.error("Error creating evolution settings:", error);
       if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
         res.status(400).json({ message: "Invalid data", errors: error.errors });
       } else {
         res.status(500).json({ message: "Failed to create evolution settings" });
