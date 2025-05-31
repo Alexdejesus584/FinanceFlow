@@ -41,8 +41,8 @@ function Evolution() {
   const [showNewInstanceDialog, setShowNewInstanceDialog] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [globalSettings, setGlobalSettings] = useState({
-    baseUrl: "https://evolutionapi3.m2vendas.com.br",
-    apiKey: ""
+    globalApiUrl: "https://evolutionapi3.m2vendas.com.br",
+    globalApiKey: ""
   });
   const [newInstance, setNewInstance] = useState({
     instanceName: "",
@@ -65,10 +65,10 @@ function Evolution() {
 
   // Mutation para salvar configurações globais
   const saveGlobalSettings = useMutation({
-    mutationFn: async (data: { baseUrl: string; apiKey: string }) => {
+    mutationFn: async (data: { globalApiUrl: string; globalApiKey: string }) => {
       if (settings?.id) {
         return await apiRequest(`/api/evolution-settings/${settings.id}`, {
-          method: "PATCH",
+          method: "PUT",
           body: data,
         });
       } else {
@@ -172,7 +172,7 @@ function Evolution() {
   });
 
   const handleSaveGlobalSettings = () => {
-    if (!globalSettings.baseUrl.trim()) {
+    if (!globalSettings.globalApiUrl.trim()) {
       toast({
         title: "URL obrigatória",
         description: "Por favor, insira a URL base da Evolution API.",
@@ -181,7 +181,7 @@ function Evolution() {
       return;
     }
 
-    if (!globalSettings.apiKey.trim()) {
+    if (!globalSettings.globalApiKey.trim()) {
       toast({
         title: "Chave API obrigatória",
         description: "Por favor, insira a chave global da API.",
@@ -220,10 +220,10 @@ function Evolution() {
   );
 
   // Carregar configurações existentes
-  if (settings && globalSettings.baseUrl === "https://evolutionapi3.m2vendas.com.br" && !globalSettings.apiKey) {
+  if (settings && globalSettings.globalApiUrl === "https://evolutionapi3.m2vendas.com.br" && !globalSettings.globalApiKey) {
     setGlobalSettings({
-      baseUrl: settings.baseUrl || "https://evolutionapi3.m2vendas.com.br",
-      apiKey: settings.apiKey || ""
+      globalApiUrl: settings.globalApiUrl || "https://evolutionapi3.m2vendas.com.br",
+      globalApiKey: settings.globalApiKey || ""
     });
   }
 
@@ -256,8 +256,8 @@ function Evolution() {
             <Input
               id="baseUrl"
               type="text"
-              value={globalSettings.baseUrl}
-              onChange={(e) => setGlobalSettings(prev => ({ ...prev, baseUrl: e.target.value }))}
+              value={globalSettings.globalApiUrl}
+              onChange={(e) => setGlobalSettings(prev => ({ ...prev, globalApiUrl: e.target.value }))}
               placeholder="https://evolutionapi3.m2vendas.com.br"
               className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
             />
