@@ -114,6 +114,20 @@ export const calendarEvents = pgTable("calendar_events", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Evolution API instances table
+export const evolutionInstances = pgTable("evolution_instances", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  baseUrl: varchar("base_url").notNull(),
+  apiKey: varchar("api_key").notNull(),
+  instanceName: varchar("instance_name").notNull(),
+  status: varchar("status").default("inactive"),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   customers: many(customers),
@@ -121,6 +135,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   messageTemplates: many(messageTemplates),
   messageHistory: many(messageHistory),
   calendarEvents: many(calendarEvents),
+  evolutionInstances: many(evolutionInstances),
 }));
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
@@ -228,4 +243,6 @@ export type InsertMessageTemplate = z.infer<typeof insertMessageTemplateSchema>;
 export type MessageTemplate = typeof messageTemplates.$inferSelect;
 export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
 export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertEvolutionInstance = z.infer<typeof insertEvolutionInstanceSchema>;
+export type EvolutionInstance = typeof evolutionInstances.$inferSelect;
 export type MessageHistory = typeof messageHistory.$inferSelect;
