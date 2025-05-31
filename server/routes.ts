@@ -6,7 +6,8 @@ import {
   insertCustomerSchema, 
   insertBillingSchema, 
   insertMessageTemplateSchema,
-  insertCalendarEventSchema 
+  insertCalendarEventSchema,
+  insertEvolutionInstanceSchema 
 } from "@shared/schema";
 import { z } from "zod";
 import { emailService } from "./email-service";
