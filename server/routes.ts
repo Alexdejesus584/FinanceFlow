@@ -249,7 +249,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
+      console.log("Updating evolution settings for user:", userId, "ID:", id);
+      console.log("Request body:", req.body);
+      
       const validatedData = insertEvolutionSettingsSchema.partial().parse(req.body);
+      console.log("Validated data:", validatedData);
       
       const settings = await storage.updateEvolutionSettings(id, validatedData, userId);
       
@@ -257,10 +261,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Evolution settings not found" });
       }
       
+      console.log("Settings updated successfully:", settings);
       res.json(settings);
     } catch (error) {
       console.error("Error updating evolution settings:", error);
       if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
         res.status(400).json({ message: "Invalid data", errors: error.errors });
       } else {
         res.status(500).json({ message: "Failed to update evolution settings" });
