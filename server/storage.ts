@@ -79,6 +79,13 @@ export interface IStorage {
   deleteEvolutionInstance(id: number, userId: string): Promise<boolean>;
   setDefaultEvolutionInstance(id: number, userId: string): Promise<boolean>;
 
+  // Billing types operations
+  getBillingTypes(userId: string): Promise<BillingType[]>;
+  getBillingType(id: number, userId: string): Promise<BillingType | undefined>;
+  createBillingType(billingType: InsertBillingType & { userId: string }): Promise<BillingType>;
+  updateBillingType(id: number, billingType: Partial<InsertBillingType>, userId: string): Promise<BillingType | undefined>;
+  deleteBillingType(id: number, userId: string): Promise<boolean>;
+
   // Dashboard statistics
   getDashboardStats(userId: string): Promise<{
     totalCustomers: number;

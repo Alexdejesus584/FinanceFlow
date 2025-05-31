@@ -29,7 +29,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertBillingSchema } from "@shared/schema";
-import type { Billing, Customer } from "@shared/schema";
+import type { Billing, Customer, BillingType } from "@shared/schema";
 
 const formSchema = insertBillingSchema;
 
@@ -48,6 +48,11 @@ export default function BillingForm({ open, onClose, billing }: BillingFormProps
 
   const { data: customers } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    enabled: open,
+  });
+
+  const { data: billingTypes } = useQuery<BillingType[]>({
+    queryKey: ["/api/billing-types"],
     enabled: open,
   });
 

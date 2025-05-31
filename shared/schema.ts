@@ -293,4 +293,6 @@ export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
 export type CalendarEvent = typeof calendarEvents.$inferSelect;
 export type InsertEvolutionInstance = z.infer<typeof insertEvolutionInstanceSchema>;
 export type EvolutionInstance = typeof evolutionInstances.$inferSelect;
+export type InsertBillingType = z.infer<typeof insertBillingTypeSchema>;
+export type BillingType = typeof billingTypes.$inferSelect;
 export type MessageHistory = typeof messageHistory.$inferSelect;
