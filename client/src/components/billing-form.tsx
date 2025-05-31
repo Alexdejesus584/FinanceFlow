@@ -69,7 +69,7 @@ export default function BillingForm({ open, onClose, billing }: BillingFormProps
       const submitData = {
         ...data,
         customerId: Number(data.customerId),
-        amount: data.amount,
+        amount: typeof data.amount === 'string' ? data.amount.replace(',', '.') : data.amount, // Convert comma to dot for decimal
       };
       
       const url = billing ? `/api/billings/${billing.id}` : "/api/billings";

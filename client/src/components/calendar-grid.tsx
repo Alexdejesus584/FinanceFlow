@@ -163,9 +163,9 @@ export default function CalendarGrid({ onNewBilling }: CalendarGridProps) {
               </Button>
             </div>
           </div>
-          <Button onClick={() => setShowBillingForm(true)} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={onNewBilling} className="bg-purple-600 hover:bg-purple-700">
             <Plus className="h-4 w-4 mr-2" />
-            Nova Cobrança
+            Novo Evento
           </Button>
         </div>
 

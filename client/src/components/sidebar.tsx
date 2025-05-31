@@ -9,7 +9,8 @@ import {
   UserCog,
   CalendarDays,
   LogOut,
-  Plus
+  Plus,
+  CreditCard
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
@@ -23,6 +24,10 @@ const navigation = [
   { name: 'Kanban', href: '/kanban', icon: Columns },
   { name: 'Mensagens', href: '/messages', icon: MessageSquare },
   { name: 'Usuários', href: '/users', icon: UserCog },
+];
+
+const billingSection = [
+  { name: 'Nova Cobrança', action: 'new-billing', icon: Plus },
 ];
 
 export default function Sidebar() {
