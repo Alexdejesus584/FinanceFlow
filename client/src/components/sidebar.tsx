@@ -10,13 +10,13 @@ import {
   CalendarDays,
   LogOut,
   Plus,
-  CreditCard
+  CreditCard,
+  Bot
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import BillingForm from "./billing-form";
-import evolutionIcon from "@assets/image_1748729478675.png";
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -25,7 +25,7 @@ const navigation = [
   { name: 'Clientes', href: '/customers', icon: Users },
   { name: 'Kanban', href: '/kanban', icon: Columns },
   { name: 'Mensagens', href: '/messages', icon: MessageSquare },
-  { name: 'Evolution API', href: '/evolution', customIcon: evolutionIcon },
+  { name: 'Evolution API', href: '/evolution', icon: Bot },
   { name: 'Usuários', href: '/users', icon: UserCog },
 ];
 
@@ -82,14 +82,7 @@ export default function Sidebar() {
                       : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   )}
                 >
-                  {item.customIcon ? (
-                    <img src={item.customIcon} alt={item.name} className="mr-3 h-5 w-5" />
-                  ) : (
-                    (() => {
-                      const IconComponent = item.icon;
-                      return IconComponent ? <IconComponent className="mr-3 h-5 w-5" /> : null;
-                    })()
-                  )}
+                  <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
                 </div>
               </Link>
