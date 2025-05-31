@@ -229,12 +229,12 @@ export default function Dashboard() {
                 upcomingBillings.map((billing) => (
                   <div key={billing.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div>
-                      <p className="text-sm font-medium">{billing.customer.name}</p>
-                      <p className="text-xs text-muted-foreground">{billing.description}</p>
+                      <p className="text-sm font-medium">{billing.customer?.name || billing.billings?.customer?.name || 'Cliente não encontrado'}</p>
+                      <p className="text-xs text-muted-foreground">{billing.description || billing.billings?.description || 'Sem descrição'}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium">{formatCurrency(Number(billing.amount))}</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(billing.dueDate)}</p>
+                      <p className="text-sm font-medium">{formatCurrency(Number(billing.amount || billing.billings?.amount || 0))}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(billing.dueDate || billing.billings?.dueDate || new Date().toISOString())}</p>
                     </div>
                   </div>
                 ))
