@@ -104,8 +104,8 @@ export default function Messages() {
   });
 
   const filteredHistory = messageHistory?.filter((message) =>
-    message.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    message.content.toLowerCase().includes(searchTerm.toLowerCase())
+    message.customer?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+    message.content?.toLowerCase()?.includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleEditTemplate = (template: MessageTemplate) => {
