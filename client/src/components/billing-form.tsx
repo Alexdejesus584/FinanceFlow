@@ -54,7 +54,7 @@ export default function BillingForm({ open, onClose, billing }: BillingFormProps
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerId: billing?.customerId || undefined,
+      customerId: billing?.customerId || 0,
       amount: billing?.amount || "",
       description: billing?.description || "",
       dueDate: billing?.dueDate || "",
@@ -132,7 +132,7 @@ export default function BillingForm({ open, onClose, billing }: BillingFormProps
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                    <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={field.value?.toString()}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecionar cliente" />
