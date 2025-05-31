@@ -6,6 +6,7 @@ import {
   messageHistory,
   calendarEvents,
   evolutionInstances,
+  evolutionSettings,
   billingTypes,
   type User,
   type UpsertUser,
@@ -20,6 +21,8 @@ import {
   type InsertCalendarEvent,
   type EvolutionInstance,
   type InsertEvolutionInstance,
+  type EvolutionSettings,
+  type InsertEvolutionSettings,
   type BillingType,
   type InsertBillingType,
 } from "@shared/schema";
@@ -74,13 +77,19 @@ export interface IStorage {
   updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>, userId: string): Promise<CalendarEvent | undefined>;
   deleteCalendarEvent(id: number, userId: string): Promise<boolean>;
 
+  // Evolution API settings operations
+  getEvolutionSettings(userId: string): Promise<EvolutionSettings | undefined>;
+  createEvolutionSettings(settings: InsertEvolutionSettings & { userId: string }): Promise<EvolutionSettings>;
+  updateEvolutionSettings(id: number, settings: Partial<InsertEvolutionSettings>, userId: string): Promise<EvolutionSettings | undefined>;
+
   // Evolution API instances operations
   getEvolutionInstances(userId: string): Promise<EvolutionInstance[]>;
   getEvolutionInstance(id: number, userId: string): Promise<EvolutionInstance | undefined>;
   createEvolutionInstance(instance: InsertEvolutionInstance & { userId: string }): Promise<EvolutionInstance>;
   updateEvolutionInstance(id: number, instance: Partial<InsertEvolutionInstance>, userId: string): Promise<EvolutionInstance | undefined>;
   deleteEvolutionInstance(id: number, userId: string): Promise<boolean>;
-  setDefaultEvolutionInstance(id: number, userId: string): Promise<boolean>;
+  connectEvolutionInstance(id: number, userId: string): Promise<boolean>;
+  disconnectEvolutionInstance(id: number, userId: string): Promise<boolean>;
 
   // Billing types operations
   getBillingTypes(userId: string): Promise<BillingType[]>;
@@ -445,6 +454,26 @@ export class DatabaseStorage implements IStorage {
       .delete(billingTypes)
       .where(and(eq(billingTypes.id, id), eq(billingTypes.userId, userId)));
     return (result.rowCount || 0) > 0;
+  }
+
+  // Evolution API settings operations
+  async getEvolutionSettings(userId: string): Promise<EvolutionSettings | undefined> {
+    const [settings] = await db.select().from(evolutionSettings).where(eq(evolutionSettings.userId, userId));
+    return settings;
+  }
+
+  async createEvolutionSettings(settings: InsertEvolutionSettings & { userId: string }): Promise<EvolutionSettings> {
+    const [newSettings] = await db.insert(evolutionSettings).values(settings).returning();
+    return newSettings;
+  }
+
+  async updateEvolutionSettings(id: number, settings: Partial<InsertEvolutionSettings>, userId: string): Promise<EvolutionSettings | undefined> {
+    const [updatedSettings] = await db
+      .update(evolutionSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(and(eq(evolutionSettings.id, id), eq(evolutionSettings.userId, userId)))
+      .returning();
+    return updatedSettings;
   }
 
   // Evolution API instances operations
