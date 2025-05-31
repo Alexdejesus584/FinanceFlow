@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { EvolutionInstance, EvolutionSettings } from "@shared/schema";
 
-export default function Evolution() {
+function Evolution() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewInstanceDialog, setShowNewInstanceDialog] = useState(false);
@@ -478,3 +478,5 @@ export default function Evolution() {
     </div>
   );
 }
+
+export default Evolution;
