@@ -35,20 +35,9 @@ export default function Header() {
           >
             <Bell className="h-5 w-5" />
           </Button>
-          <Button 
-            onClick={() => setShowBillingForm(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Cobrança
-          </Button>
         </div>
       </header>
 
-      <BillingForm 
-        open={showBillingForm} 
-        onClose={() => setShowBillingForm(false)} 
-      />
     </>
   );
 }
