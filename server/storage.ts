@@ -6,6 +6,7 @@ import {
   messageHistory,
   calendarEvents,
   evolutionInstances,
+  billingTypes,
   type User,
   type UpsertUser,
   type Customer,
@@ -19,6 +20,8 @@ import {
   type InsertCalendarEvent,
   type EvolutionInstance,
   type InsertEvolutionInstance,
+  type BillingType,
+  type InsertBillingType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, gte, lte, or, sql, count } from "drizzle-orm";
@@ -405,6 +408,43 @@ export class DatabaseStorage implements IStorage {
       monthlyRevenue: Number(monthlyRevenue?.sum || 0),
       overdueBillings: overdueBillingsCount?.count || 0,
     };
+  }
+
+  // Billing types operations
+  async getBillingTypes(userId: string): Promise<BillingType[]> {
+    return await db.select().from(billingTypes).where(eq(billingTypes.userId, userId));
+  }
+
+  async getBillingType(id: number, userId: string): Promise<BillingType | undefined> {
+    const [billingType] = await db
+      .select()
+      .from(billingTypes)
+      .where(and(eq(billingTypes.id, id), eq(billingTypes.userId, userId)));
+    return billingType;
+  }
+
+  async createBillingType(billingType: InsertBillingType & { userId: string }): Promise<BillingType> {
+    const [newBillingType] = await db
+      .insert(billingTypes)
+      .values(billingType)
+      .returning();
+    return newBillingType;
+  }
+
+  async updateBillingType(id: number, billingType: Partial<InsertBillingType>, userId: string): Promise<BillingType | undefined> {
+    const [updatedBillingType] = await db
+      .update(billingTypes)
+      .set({ ...billingType, updatedAt: new Date() })
+      .where(and(eq(billingTypes.id, id), eq(billingTypes.userId, userId)))
+      .returning();
+    return updatedBillingType;
+  }
+
+  async deleteBillingType(id: number, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(billingTypes)
+      .where(and(eq(billingTypes.id, id), eq(billingTypes.userId, userId)));
+    return (result.rowCount || 0) > 0;
   }
 }
 

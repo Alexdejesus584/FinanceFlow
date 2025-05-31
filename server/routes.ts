@@ -192,6 +192,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Billing types routes
+  app.get('/api/billing-types', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const billingTypes = await storage.getBillingTypes(userId);
+      res.json(billingTypes);
+    } catch (error) {
+      console.error("Error fetching billing types:", error);
+      res.status(500).json({ message: "Failed to fetch billing types" });
+    }
+  });
+
   // Message template routes
   app.get('/api/message-templates', isAuthenticated, async (req: any, res) => {
     try {

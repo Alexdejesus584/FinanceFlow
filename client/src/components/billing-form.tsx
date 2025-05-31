@@ -66,6 +66,7 @@ export default function BillingForm({ open, onClose, billing }: BillingFormProps
       recurrenceType: billing?.recurrenceType || "none",
       recurrenceInterval: billing?.recurrenceInterval || 1,
       pixKey: billing?.pixKey || "",
+      billingTypeId: billing?.billingTypeId || null,
     },
   });
 
@@ -147,6 +148,31 @@ export default function BillingForm({ open, onClose, billing }: BillingFormProps
                         {customers?.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id.toString()}>
                             {customer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="billingTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Cobrança</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={field.value?.toString()}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecionar tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {billingTypes?.map((type) => (
+                          <SelectItem key={type.id} value={type.id.toString()}>
+                            {type.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
