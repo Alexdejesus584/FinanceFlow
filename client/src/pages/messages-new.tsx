@@ -32,6 +32,7 @@ export default function Messages() {
   const [dispatcherPhone, setDispatcherPhone] = useState("");
   const [dispatcherMessage, setDispatcherMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [selectedBilling, setSelectedBilling] = useState<string>("");
   const [scheduleMessage, setScheduleMessage] = useState(false);
   const [showBillingDialog, setShowBillingDialog] = useState(false);
   const [selectedBillings, setSelectedBillings] = useState<number[]>([]);
@@ -211,9 +212,46 @@ export default function Messages() {
             {activeTab === 'dispatcher' && (
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Selecionar Agendamento (opcional)</label>
-                  <select className="w-full p-2 border rounded-lg text-gray-500">
-                    <option>Selecione um agendamento</option>
+                  <label className="text-sm font-medium mb-2 block">Selecionar Cobrança do Sistema</label>
+                  <select 
+                    className="w-full p-2 border rounded-lg"
+                    value={selectedBilling}
+                    onChange={(e) => {
+                      setSelectedBilling(e.target.value);
+                      if (e.target.value) {
+                        const billing = activeBillings.find((item: any) => {
+                          const bill = item.billings || item;
+                          return bill.id.toString() === e.target.value;
+                        });
+                        if (billing) {
+                          const bill = billing.billings || billing;
+                          const customer = billing.customer || billing.customers;
+                          setDispatcherPhone(customer?.phone || customer?.whatsapp || "");
+                          
+                          // Auto-preencher mensagem com template de cobrança
+                          const template = templates?.find(t => t.triggerType === 'billing');
+                          if (template) {
+                            let message = template.content;
+                            message = message.replace('{nome}', customer?.name || 'Cliente');
+                            message = message.replace('{valor}', `R$ ${typeof bill.amount === 'number' ? bill.amount.toFixed(2) : '0,00'}`);
+                            message = message.replace('{servico}', bill.description || 'Serviço');
+                            message = message.replace('{data}', bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('pt-BR') : '');
+                            setDispatcherMessage(message);
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <option value="">Selecione uma cobrança</option>
+                    {activeBillings.map((item: any) => {
+                      const billing = item.billings || item;
+                      const customer = item.customer || item.customers;
+                      return (
+                        <option key={billing.id} value={billing.id.toString()}>
+                          {customer?.name || 'Cliente'} - {billing.description || 'Cobrança'} - R$ {typeof billing.amount === 'number' ? billing.amount.toFixed(2) : '0,00'}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
