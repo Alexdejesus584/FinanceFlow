@@ -164,10 +164,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCustomer(id: number, userId: string): Promise<boolean> {
-    const result = await db
-      .delete(customers)
-      .where(and(eq(customers.id, id), eq(customers.userId, userId)));
-    return result.rowCount > 0;
+    try {
+      // First, delete calendar events related to billings of this customer
+      await db.execute(`
+        DELETE FROM calendar_events 
+        WHERE billing_id IN (
+          SELECT id FROM billings 
+          WHERE customer_id = ${id} AND user_id = '${userId}'
+        )
+      `);
+      
+      // Then delete billings for this customer
+      await db
+        .delete(billings)
+        .where(and(eq(billings.customerId, id), eq(billings.userId, userId)));
+      
+      // Finally delete the customer
+      const result = await db
+        .delete(customers)
+        .where(and(eq(customers.id, id), eq(customers.userId, userId)));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      throw error;
+    }
   }
 
   // Billing operations
