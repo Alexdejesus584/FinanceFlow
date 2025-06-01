@@ -77,10 +77,8 @@ export default function Messages() {
     enabled: true, // Sempre carregar instâncias para o Disparador
   });
 
-  // Filter pending billings for the dispatcher
-  const pendingBillings = Array.isArray(billings) ? billings.filter((billing: any) => 
-    billing.billings?.status !== 'paid'
-  ) : [];
+  // Get all active billings for the dispatcher - includes all statuses for reminder purposes
+  const activeBillings = Array.isArray(billings) ? billings : [];
 
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -653,9 +651,9 @@ export default function Messages() {
             <div>
               <label className="text-sm font-medium mb-3 block">Selecione as cobranças para enviar:</label>
               
-              {pendingBillings && Array.isArray(pendingBillings) && pendingBillings.length > 0 ? (
+              {activeBillings && Array.isArray(activeBillings) && activeBillings.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {pendingBillings.map((billing: any) => (
+                  {activeBillings.map((billing: any) => (
                     <div key={billing.billings.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-3">
                         <input
