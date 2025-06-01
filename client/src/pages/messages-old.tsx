@@ -78,7 +78,14 @@ export default function Messages() {
       queryClient.invalidateQueries({ queryKey: ["/api/message-templates"] });
       toast({
         title: "Template excluído",
-        description: "Template removido com sucesso.",
+        description: "Template de mensagem removido com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao excluir template.",
+        variant: "destructive",
       });
     },
   });
@@ -154,21 +161,6 @@ export default function Messages() {
     setEditingTemplate(undefined);
   };
 
-  const getTriggerTypeLabel = (triggerType: string) => {
-    switch (triggerType) {
-      case 'manual':
-        return 'Manual';
-      case 'before_due':
-        return 'Antes do vencimento';
-      case 'on_due':
-        return 'No vencimento';
-      case 'after_due':
-        return 'Após vencimento';
-      default:
-        return 'Manual';
-    }
-  };
-
   const handleSendMessage = () => {
     if (!selectedCustomer || !messageContent.trim()) {
       toast({
@@ -228,18 +220,53 @@ export default function Messages() {
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'failed':
         return <AlertCircle className="h-4 w-4 text-red-600" />;
-      default:
+      case 'pending':
         return <Clock className="h-4 w-4 text-yellow-600" />;
+      default:
+        return <MessageSquare className="h-4 w-4 text-gray-600" />;
     }
   };
 
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'Data não disponível';
-    
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      sent: "default",
+      failed: "destructive",
+      pending: "outline",
+    } as const;
+
+    const labels = {
+      sent: "Enviado",
+      failed: "Falha",
+      pending: "Pendente",
+    } as const;
+
+    return (
+      <Badge variant={variants[status as keyof typeof variants] || "secondary"}>
+        {labels[status as keyof typeof labels] || status}
+      </Badge>
+    );
+  };
+
+  const getTriggerTypeLabel = (triggerType: string) => {
+    const labels = {
+      before_due: "Antes do vencimento",
+      after_due: "Após vencimento",
+      manual: "Manual",
+    } as const;
+
+    return labels[triggerType as keyof typeof labels] || triggerType;
+  };
+
+  const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return 'Data inválida';
-    }
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return "Agora";
+    if (diffInHours < 24) return `${diffInHours}h atrás`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d atrás`;
     
     return date.toLocaleDateString('pt-BR');
   };
@@ -283,45 +310,41 @@ export default function Messages() {
               ) : templates && templates.length > 0 ? (
                 <div className="space-y-4">
                   {templates.map((template) => (
-                    <div key={template.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-medium">{template.name}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {template.category}
+                    <div key={template.id} className="border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-foreground">{template.name}</h4>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={template.isActive ? "default" : "secondary"}>
+                            {template.isActive ? "Ativo" : "Inativo"}
                           </Badge>
-                          <Badge variant={template.triggerType === 'manual' ? 'default' : 'secondary'} className="text-xs">
-                            {template.triggerType === 'manual' ? 'Ativo' : 'Automático'}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {template.content}
-                        </p>
-                        
-                        <div className="flex items-center text-xs text-muted-foreground mt-2">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {getTriggerTypeLabel(template.triggerType)}
-                          {template.triggerDays !== 0 && (
-                            <span className="ml-1">- {template.triggerDays} dias</span>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditTemplate(template)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteTemplate(template.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditTemplate(template)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteTemplate(template.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="bg-muted rounded-lg p-3 text-sm text-foreground mb-3">
+                        {template.content}
+                      </div>
+                      
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {getTriggerTypeLabel(template.triggerType)}
+                        {template.triggerDays !== 0 && (
+                          <span className="ml-1">- {template.triggerDays} dias</span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -339,146 +362,69 @@ export default function Messages() {
           </Card>
         </div>
 
-        {/* Disparador Section */}
+        {/* Message History Section */}
         <div>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Disparador
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Envie mensagens individuais para seus contatos do WhatsApp. Selecione uma instância e configure seu envio.
-              </p>
+              <div className="flex items-center justify-between">
+                <CardTitle>Histórico de Envios</CardTitle>
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Buscar..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 w-40"
+                    size="sm"
+                  />
+                </div>
+              </div>
             </CardHeader>
             
             <CardContent>
-              <div className="space-y-4">
-                {/* Instâncias List */}
-                <div>
-                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Instâncias
-                  </h4>
-                  
-                  <div className="space-y-2">
-                    {instances?.filter(instance => instance.isConnected).length > 0 ? (
-                      instances.filter(instance => instance.isConnected).map((instance) => (
-                        <div key={instance.id} className="flex items-center justify-between p-3 border rounded-lg bg-green-50 dark:bg-green-900/20">
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                            <div>
-                              <p className="font-medium text-sm">{instance.instanceName}</p>
-                              <p className="text-xs text-muted-foreground">Status: Conectado</p>
-                            </div>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setDispatcherInstance(instance.id.toString());
-                              setShowDispatcherDialog(true);
-                            }}
-                          >
-                            Usar
-                          </Button>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                        <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">Nenhuma instância WhatsApp conectada</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Configure uma instância na seção Evolution API
-                        </p>
+              {historyLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Carregando histórico...</p>
+                </div>
+              ) : filteredHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredHistory.slice(0, 10).map((message) => (
+                    <div key={message.id} className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                        {getStatusIcon(message.status)}
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Informações */}
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center mt-0.5">
-                      <span className="text-xs text-white font-bold">i</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          {message.customer.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {message.content.length > 50 
+                            ? `${message.content.substring(0, 50)}...` 
+                            : message.content
+                          }
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          {getStatusBadge(message.status)}
+                          <p className="text-xs text-muted-foreground">
+                            {formatTimeAgo(message.createdAt!)}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h5 className="text-sm font-medium text-blue-900 dark:text-blue-100">Informações</h5>
-                      <p className="text-xs text-blue-700 dark:text-blue-200 mt-1">
-                        Esta função permite enviar uma única mensagem para um número específico. Você pode selecionar um agendamento para preencher automaticamente as informações do cliente.
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Send className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Nenhuma mensagem enviada</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {searchTerm ? "Nenhum resultado encontrado" : "Histórico aparecerá aqui"}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* Histórico de Envios - Full Width */}
-      <div>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Histórico de Envios</CardTitle>
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Buscar..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 w-64"
-                />
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent>
-            {historyLoading ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Carregando histórico...</p>
-              </div>
-            ) : filteredHistory.length > 0 ? (
-              <div className="space-y-3">
-                {filteredHistory.map((message) => (
-                  <div key={message.message_history.id} className="flex items-start justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">
-                          {message.customer?.name || 'Número direto'}
-                        </span>
-                        <Badge variant={message.message_history.method === 'email' ? 'default' : 'secondary'}>
-                          {message.message_history.method === 'email' ? 'E-mail' : 'WhatsApp'}
-                        </Badge>
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(message.message_history.status)}
-                          <span className="text-xs capitalize">
-                            {message.message_history.status === 'sent' ? 'Enviado' : 'Falhou'}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {message.message_history.content}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDate(message.message_history.sentAt)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Send className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Nenhuma mensagem enviada</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Histórico aparecerá aqui
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Send Message Dialog */}
