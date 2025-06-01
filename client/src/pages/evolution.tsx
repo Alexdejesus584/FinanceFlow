@@ -32,8 +32,7 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  Save,
-  Sync
+  Save
 } from "lucide-react";
 import { EvolutionInstance, EvolutionSettings } from "@shared/schema";
 
@@ -200,6 +199,28 @@ function Evolution() {
       toast({
         title: "Erro",
         description: "Não foi possível alterar o status da instância.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation para sincronizar status
+  const syncStatus = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest(`/api/evolution-instances/${id}/sync-status`, "POST");
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Status sincronizado",
+        description: "Status da instância sincronizado com a Evolution API.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro na sincronização",
+        description: "Não foi possível sincronizar o status da instância.",
         variant: "destructive",
       });
     },
@@ -546,6 +567,17 @@ function Evolution() {
                         Gerar QR
                       </Button>
                     )}
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => syncStatus.mutate(instance.id)}
+                      className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900"
+                      disabled={syncStatus.isPending}
+                      title="Sincronizar status com Evolution API"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
                     
                     <Button
                       size="sm"
