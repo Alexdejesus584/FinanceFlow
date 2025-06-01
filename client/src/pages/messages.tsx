@@ -32,7 +32,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import MessageTemplateForm from "@/components/message-template-form";
-import type { MessageTemplate, MessageHistory, Customer } from "@shared/schema";
+import type { MessageTemplate, MessageHistory, Customer, EvolutionInstance } from "@shared/schema";
 
 type MessageHistoryWithCustomer = MessageHistory & { customer: Customer };
 
@@ -46,6 +46,7 @@ export default function Messages() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [messageContent, setMessageContent] = useState("");
   const [messageMethod, setMessageMethod] = useState<string>("email");
+  const [selectedInstance, setSelectedInstance] = useState<string>("");
 
   const { data: templates, isLoading: templatesLoading } = useQuery<MessageTemplate[]>({
     queryKey: ["/api/message-templates"],
@@ -58,6 +59,11 @@ export default function Messages() {
   const { data: customers } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
     enabled: showSendMessageDialog,
+  });
+
+  const { data: instances } = useQuery<EvolutionInstance[]>({
+    queryKey: ["/api/evolution-instances"],
+    enabled: showSendMessageDialog && messageMethod === "whatsapp",
   });
 
   const deleteTemplateMutation = useMutation({
@@ -81,8 +87,9 @@ export default function Messages() {
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (data: { customerId: number; content: string; method: string }) => {
-      await apiRequest("POST", "/api/send-message", data);
+    mutationFn: async (data: { customerId: number; content: string; method: string; instanceId?: number }) => {
+      const response = await apiRequest("/api/send-message", "POST", data);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/message-history"] });
@@ -93,6 +100,7 @@ export default function Messages() {
       setShowSendMessageDialog(false);
       setMessageContent("");
       setSelectedCustomer("");
+      setSelectedInstance("");
     },
     onError: (error) => {
       toast({
@@ -134,10 +142,20 @@ export default function Messages() {
       return;
     }
 
+    if (messageMethod === "whatsapp" && !selectedInstance) {
+      toast({
+        title: "Instância obrigatória",
+        description: "Selecione uma instância WhatsApp conectada.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     sendMessageMutation.mutate({
       customerId: Number(selectedCustomer),
       content: messageContent,
       method: messageMethod,
+      instanceId: selectedInstance ? Number(selectedInstance) : undefined,
     });
   };
 
@@ -389,6 +407,29 @@ export default function Messages() {
                 </SelectContent>
               </Select>
             </div>
+
+            {messageMethod === "whatsapp" && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Instância WhatsApp</label>
+                <Select value={selectedInstance} onValueChange={setSelectedInstance}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar instância conectada" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {instances?.filter(instance => instance.isConnected).map((instance) => (
+                      <SelectItem key={instance.id} value={instance.id.toString()}>
+                        {instance.instanceName} - {instance.isConnected ? "Conectado" : "Desconectado"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {instances?.filter(instance => instance.isConnected).length === 0 && (
+                  <p className="text-sm text-orange-600 mt-1">
+                    Nenhuma instância WhatsApp conectada. Configure uma instância na seção Evolution API.
+                  </p>
+                )}
+              </div>
+            )}
             
             <div>
               <label className="text-sm font-medium mb-2 block">Mensagem</label>

@@ -759,14 +759,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/send-message', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { customerId, templateId, content, method } = req.body;
+      const { customerId, templateId, content, method, instanceId } = req.body;
       
       const customer = await storage.getCustomer(customerId, userId);
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
       
-      const success = await emailService.sendMessage(customer, content, method);
+      let success = false;
+      
+      if (method === 'whatsapp' && instanceId) {
+        // Enviar via instância Evolution API específica
+        const instance = await storage.getEvolutionInstance(instanceId, userId);
+        if (!instance || !instance.isConnected) {
+          return res.status(400).json({ message: "WhatsApp instance not found or not connected" });
+        }
+        
+        const settings = await storage.getEvolutionSettings(userId);
+        if (!settings) {
+          return res.status(400).json({ message: "Evolution API settings not configured" });
+        }
+        
+        const evolutionClient = new EvolutionAPIClient({
+          baseUrl: settings.globalApiUrl,
+          globalApiKey: settings.globalApiKey,
+        });
+        
+        // Formatar número do WhatsApp
+        const phone = customer.phone?.replace(/\D/g, '') || '';
+        const formattedPhone = phone.length === 11 ? `55${phone}` : phone;
+        
+        if (!phone) {
+          return res.status(400).json({ message: "Customer phone number not available" });
+        }
+        
+        try {
+          const whatsappResponse = await evolutionClient.sendTextMessage(
+            instance.instanceName,
+            `${formattedPhone}@s.whatsapp.net`,
+            content
+          );
+          
+          success = whatsappResponse && !whatsappResponse.error;
+        } catch (error) {
+          console.error("Error sending WhatsApp message:", error);
+          success = false;
+        }
+      } else {
+        // Enviar via email service (método padrão)
+        success = await emailService.sendMessage(customer, content, method);
+      }
       
       await storage.createMessageHistory({
         userId,
