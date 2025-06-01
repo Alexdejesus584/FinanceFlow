@@ -87,11 +87,20 @@ export default function Billings() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<InsertBilling> }) => 
-      apiRequest(`/api/billings/${id}`, {
+    mutationFn: ({ id, data }: { id: number; data: Partial<InsertBilling> }) => {
+      return fetch(`/api/billings/${id}`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
-      }),
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/billings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
@@ -111,9 +120,16 @@ export default function Billings() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/billings/${id}`, {
-      method: 'DELETE',
-    }),
+    mutationFn: (id: number) => {
+      return fetch(`/api/billings/${id}`, {
+        method: 'DELETE',
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.ok;
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/billings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
