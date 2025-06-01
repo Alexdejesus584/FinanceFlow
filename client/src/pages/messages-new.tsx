@@ -277,8 +277,15 @@ export default function Messages() {
                   <input
                     type="text"
                     placeholder="Ex: 5511999999999"
-                    value={dispatcherPhone}
-                    onChange={(e) => setDispatcherPhone(e.target.value)}
+                    value={dispatcherPhone || "55"}
+                    onChange={(e) => {
+                      let value = e.target.value;
+                      // Ensure it always starts with 55
+                      if (!value.startsWith("55")) {
+                        value = "55" + value.replace(/^55*/, "");
+                      }
+                      setDispatcherPhone(value);
+                    }}
                     className="w-full p-2 border rounded-lg"
                   />
                   <p className="text-xs text-gray-500 mt-1">Digite o número com código do país, sem espaços ou caracteres especiais.</p>
