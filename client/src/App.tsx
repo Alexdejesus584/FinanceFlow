@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
+import Billings from "@/pages/billings";
 import Calendar from "@/pages/calendar";
 import Customers from "@/pages/customers";
 import Kanban from "@/pages/kanban";
@@ -36,6 +37,7 @@ function Router() {
         <main className="p-6">
           <Switch>
             <Route path="/" component={Dashboard} />
+            <Route path="/billings" component={Billings} />
             <Route path="/calendar" component={Calendar} />
             <Route path="/customers" component={Customers} />
             <Route path="/kanban" component={Kanban} />
