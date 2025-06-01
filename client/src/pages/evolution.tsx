@@ -533,9 +533,14 @@ function Evolution() {
               <div className="text-center space-y-4">
                 <div className="bg-white p-4 rounded-lg mx-auto inline-block">
                   <img 
-                    src={`data:image/png;base64,${qrCodeData.qrCode}`}
+                    src={qrCodeData.qrCode.startsWith('data:') ? qrCodeData.qrCode : `data:image/png;base64,${qrCodeData.qrCode}`}
                     alt="QR Code"
                     className="w-64 h-64 mx-auto"
+                    onError={(e) => {
+                      console.log('Erro ao carregar QR Code:', qrCodeData);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                    onLoad={() => console.log('QR Code carregado com sucesso')}
                   />
                 </div>
                 <div className="space-y-2">

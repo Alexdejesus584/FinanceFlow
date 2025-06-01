@@ -94,7 +94,14 @@ export class EvolutionAPIClient {
 
   // Obter QR Code da instância
   async getQRCode(instanceName: string): Promise<any> {
-    return await this.makeRequest(`/instance/qrcode/${instanceName}`, 'GET');
+    // Primeiro tenta conectar para gerar QR Code
+    try {
+      const connectResponse = await this.makeRequest(`/instance/connect/${instanceName}`, 'GET');
+      return connectResponse;
+    } catch (error) {
+      // Se falhar, tenta endpoint alternativo
+      return await this.makeRequest(`/instance/${instanceName}/qr`, 'GET');
+    }
   }
 
   // Desconectar uma instância
