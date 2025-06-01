@@ -122,6 +122,13 @@ export class EvolutionAPIClient {
     return await this.makeRequest(`/instance/restart/${instanceName}`, 'PUT');
   }
 
+  // Verificar se o número existe no WhatsApp
+  async checkWhatsAppNumber(instanceName: string, numbers: string[]): Promise<any> {
+    return await this.makeRequest(`/chat/whatsappNumbers/${instanceName}`, 'POST', {
+      numbers
+    });
+  }
+
   // Enviar mensagem de texto
   async sendTextMessage(instanceName: string, number: string, message: string): Promise<any> {
     return await this.makeRequest(`/message/sendText/${instanceName}`, 'POST', {

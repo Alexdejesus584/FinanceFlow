@@ -890,6 +890,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       try {
+        // First check if the number exists in WhatsApp
+        const phoneCheck = await evolutionClient.checkWhatsAppNumber(
+          instance.instanceName,
+          [formattedPhone]
+        );
+        
+        // Check if the number exists in WhatsApp
+        const numberExists = phoneCheck?.find((result: any) => result.exists === true);
+        if (!numberExists) {
+          return res.status(400).json({ 
+            message: `O número ${formattedPhone} não possui WhatsApp ativo ou não foi encontrado. Verifique se o número está correto e possui WhatsApp.`,
+            phoneCheck 
+          });
+        }
+
         const whatsappResponse = await evolutionClient.sendTextMessage(
           instance.instanceName,
           `${formattedPhone}@s.whatsapp.net`,
