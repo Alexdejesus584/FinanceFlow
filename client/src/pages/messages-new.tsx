@@ -345,14 +345,26 @@ export default function Messages() {
                       }
                     }}
                   >
-                    <option value="">Selecione um template de mensagem</option>
+                    <option value="">
+                      {selectedBilling ? 
+                        (() => {
+                          const selectedBill = activeBillings.find((item: any) => {
+                            const billing = item.billings || item;
+                            return billing.id.toString() === selectedBilling;
+                          });
+                          const billing = selectedBill?.billings || selectedBill;
+                          return billing?.description || 'Selecione um template de mensagem';
+                        })() 
+                        : 'Selecione um template de mensagem'
+                      }
+                    </option>
                     {templates?.map((template) => (
                       <option key={template.id} value={template.id.toString()}>
                         {template.name}
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">Use as variáveis disponíveis para personalizar a mensagem automaticamente.</p>
+                  <p className="text-xs text-gray-500 mt-1">Quando selecionar uma cobrança, a descrição aparecerá aqui automaticamente.</p>
                 </div>
 
                 <div>
