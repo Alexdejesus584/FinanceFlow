@@ -123,6 +123,7 @@ function Evolution() {
       return await apiRequest(`/api/evolution-instances/${id}/qrcode`, "GET");
     },
     onSuccess: (data) => {
+      console.log("QR Code Response:", data);
       toast({
         title: "QR Code gerado",
         description: "QR Code gerado com sucesso. Escaneie para conectar.",
@@ -132,6 +133,7 @@ function Evolution() {
       setShowQRDialog(true);
     },
     onError: (error) => {
+      console.error("QR Code Error:", error);
       toast({
         title: "Erro",
         description: "Não foi possível gerar o QR Code.",
@@ -529,19 +531,48 @@ function Evolution() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {qrCodeData?.qrCode ? (
+            {qrCodeData ? (
               <div className="text-center space-y-4">
                 <div className="bg-white p-4 rounded-lg mx-auto inline-block">
-                  <img 
-                    src={qrCodeData.qrCode.startsWith('data:') ? qrCodeData.qrCode : `data:image/png;base64,${qrCodeData.qrCode}`}
-                    alt="QR Code"
-                    className="w-64 h-64 mx-auto"
-                    onError={(e) => {
-                      console.log('Erro ao carregar QR Code:', qrCodeData);
-                      e.currentTarget.style.display = 'none';
-                    }}
-                    onLoad={() => console.log('QR Code carregado com sucesso')}
-                  />
+                  {/* Detectar formato do QR Code */}
+                  {qrCodeData.qrcode ? (
+                    <img 
+                      src={qrCodeData.qrcode.startsWith('data:') ? qrCodeData.qrcode : `data:image/png;base64,${qrCodeData.qrcode}`}
+                      alt="QR Code"
+                      className="w-64 h-64 mx-auto"
+                      onError={(e) => {
+                        console.log('Erro ao carregar QR Code (qrcode):', qrCodeData);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => console.log('QR Code carregado com sucesso (qrcode)')}
+                    />
+                  ) : qrCodeData.qrCode ? (
+                    <img 
+                      src={qrCodeData.qrCode.startsWith('data:') ? qrCodeData.qrCode : `data:image/png;base64,${qrCodeData.qrCode}`}
+                      alt="QR Code"
+                      className="w-64 h-64 mx-auto"
+                      onError={(e) => {
+                        console.log('Erro ao carregar QR Code (qrCode):', qrCodeData);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => console.log('QR Code carregado com sucesso (qrCode)')}
+                    />
+                  ) : qrCodeData.base64 ? (
+                    <img 
+                      src={qrCodeData.base64.startsWith('data:') ? qrCodeData.base64 : `data:image/png;base64,${qrCodeData.base64}`}
+                      alt="QR Code"
+                      className="w-64 h-64 mx-auto"
+                      onError={(e) => {
+                        console.log('Erro ao carregar QR Code (base64):', qrCodeData);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => console.log('QR Code carregado com sucesso (base64)')}
+                    />
+                  ) : (
+                    <div className="w-64 h-64 mx-auto flex items-center justify-center border-2 border-dashed border-gray-300 rounded">
+                      <p className="text-gray-500">QR Code não encontrado</p>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
