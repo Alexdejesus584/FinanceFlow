@@ -327,7 +327,7 @@ export default function Messages() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Template de Cobrança</label>
+                  <label className="text-sm font-medium mb-2 block">Template de Mensagem</label>
                   <select 
                     className="w-full p-2 border rounded-lg"
                     value={selectedTemplate}
@@ -339,13 +339,14 @@ export default function Messages() {
                       }
                     }}
                   >
-                    <option value="">Selecione um template de cobrança</option>
+                    <option value="">Selecione um template de mensagem</option>
                     {templates?.map((template) => (
                       <option key={template.id} value={template.id.toString()}>
-                        {template.name} {template.triggerType ? `(${template.triggerType})` : ''}
+                        {template.name}
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">Use as variáveis disponíveis para personalizar a mensagem automaticamente.</p>
                 </div>
 
                 <div>
