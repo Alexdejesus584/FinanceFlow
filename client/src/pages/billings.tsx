@@ -167,6 +167,29 @@ export default function Billings() {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  // Função para formatar valor para exibição no input (ex: 20.5 -> "20,50")
+  const formatCurrencyInput = (value: number): string => {
+    return value.toFixed(2).replace('.', ',');
+  };
+
+  // Função para converter valor brasileiro para número (ex: "20,50" -> 20.5)
+  const parseBrazilianCurrency = (value: string): number => {
+    // Remove todos os caracteres exceto números, vírgula e ponto
+    const cleanValue = value.replace(/[^\d,\.]/g, '');
+    
+    // Se tem vírgula, trata como decimal brasileiro
+    if (cleanValue.includes(',')) {
+      const parts = cleanValue.split(',');
+      const integerPart = parts[0].replace(/\./g, ''); // Remove pontos (milhares)
+      const decimalPart = parts[1] ? parts[1].substring(0, 2) : '00'; // Máximo 2 decimais
+      return parseFloat(`${integerPart}.${decimalPart}`) || 0;
+    }
+    
+    // Se só tem números, trata como centavos se menor que 100, senão como reais
+    const numValue = parseFloat(cleanValue) || 0;
+    return numValue;
+  };
+
   if (billingsLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -286,11 +309,13 @@ export default function Billings() {
                         <FormLabel>Valor (R$)</FormLabel>
                         <FormControl>
                           <Input 
-                            type="number" 
-                            step="0.01" 
-                            placeholder="0,00" 
-                            value={field.value?.toString() || ""}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            type="text" 
+                            placeholder="20,50" 
+                            value={field.value ? formatCurrencyInput(field.value) : ""}
+                            onChange={(e) => {
+                              const value = parseBrazilianCurrency(e.target.value);
+                              field.onChange(value);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
