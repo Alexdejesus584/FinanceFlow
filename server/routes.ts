@@ -565,6 +565,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Verificar se a instância já está conectada
+      if (realInstance.connectionStatus === 'open') {
+        // Atualizar status local
+        await storage.updateEvolutionInstance(id, {
+          isConnected: true,
+          status: 'connected'
+        }, userId);
+
+        return res.status(400).json({ 
+          message: "Instance is already connected",
+          isConnected: true,
+          status: 'connected'
+        });
+      }
+
       // Usar o nome real da instância da Evolution API
       const qrResponse = await evolutionClient.getQRCode(realInstance.name);
       

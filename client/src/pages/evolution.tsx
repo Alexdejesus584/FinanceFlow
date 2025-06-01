@@ -175,11 +175,21 @@ function Evolution() {
     },
     onError: (error) => {
       console.error("QR Code Error:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível gerar o QR Code.",
-        variant: "destructive",
-      });
+      
+      // Verificar se é erro de instância já conectada
+      if (error.message && error.message.includes("Instance is already connected")) {
+        toast({
+          title: "Instância já conectada",
+          description: "Esta instância já está conectada ao WhatsApp.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
+      } else {
+        toast({
+          title: "Erro",
+          description: "Não foi possível gerar o QR Code.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
