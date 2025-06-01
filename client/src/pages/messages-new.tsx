@@ -280,7 +280,12 @@ export default function Messages() {
                     }}
                   >
                     <option value="">Selecione uma cobrança</option>
-                    {activeBillings.map((item: any) => {
+                    {activeBillings
+                      .filter((item: any) => {
+                        const billing = item.billings || item;
+                        return billing.status === 'pending';
+                      })
+                      .map((item: any) => {
                       const billing = item.billings || item;
                       const customer = item.customer || item.customers;
                       return (
