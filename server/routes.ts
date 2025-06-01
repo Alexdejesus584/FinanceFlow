@@ -402,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Criar instância na Evolution API - usando apenas parâmetros básicos
       const instanceData = {
-        instanceName: instanceName
+        instanceName: instanceName.trim()
       };
       
       // Adicionar token apenas se fornecido
