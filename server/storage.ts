@@ -306,13 +306,15 @@ export class DatabaseStorage implements IStorage {
 
   async createMessageHistory(message: {
     userId: string;
-    customerId: number;
+    customerId?: number;
     billingId?: number;
     templateId?: number;
     content: string;
     method: string;
     status: string;
     sentAt?: Date;
+    scheduledFor?: Date;
+    recipientPhone?: string;
   }): Promise<MessageHistory> {
     const [newMessage] = await db
       .insert(messageHistory)

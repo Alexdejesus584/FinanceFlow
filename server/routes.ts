@@ -847,11 +847,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Evolution API settings not configured" });
       }
       
-      const evolutionClient = new EvolutionAPIClient({
-        baseUrl: settings.globalApiUrl,
-        globalApiKey: settings.globalApiKey,
-      });
-      
       // Format WhatsApp number
       const cleanPhone = phone.replace(/\D/g, '');
       const formattedPhone = cleanPhone.length === 11 && cleanPhone.startsWith('1') 
@@ -859,6 +854,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : cleanPhone.length === 10 
         ? `5511${cleanPhone}` 
         : cleanPhone;
+
+      // If message is scheduled, save to database and don't send immediately
+      if (scheduledFor) {
+        await storage.createMessageHistory({
+          userId,
+          customerId: null,
+          templateId: null,
+          content,
+          method: 'whatsapp',
+          status: 'scheduled',
+          scheduledFor: new Date(scheduledFor),
+          recipientPhone: formattedPhone,
+          sentAt: undefined,
+        });
+
+        return res.json({ 
+          success: true, 
+          message: 'Message scheduled successfully',
+          scheduledFor: new Date(scheduledFor).toLocaleString('pt-BR')
+        });
+      }
+
+      const evolutionClient = new EvolutionAPIClient({
+        baseUrl: settings.globalApiUrl,
+        globalApiKey: settings.globalApiKey,
+      });
       
       try {
         const whatsappResponse = await evolutionClient.sendTextMessage(
