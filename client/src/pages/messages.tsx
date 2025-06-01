@@ -14,7 +14,8 @@ import {
   CheckCircle, 
   AlertCircle,
   Search,
-  MessageSquare
+  MessageSquare,
+  RefreshCw
 } from "lucide-react";
 import {
   Dialog,
@@ -65,9 +66,9 @@ export default function Messages() {
     enabled: showSendMessageDialog,
   });
 
-  const { data: instances } = useQuery<EvolutionInstance[]>({
+  const { data: instances, refetch: refetchInstances, isLoading: instancesLoading } = useQuery<EvolutionInstance[]>({
     queryKey: ["/api/evolution-instances"],
-    enabled: (showSendMessageDialog && messageMethod === "whatsapp") || showDispatcherDialog,
+    enabled: true, // Sempre carregar instâncias para o Disparador
   });
 
   const deleteTemplateMutation = useMutation({
@@ -356,38 +357,62 @@ export default function Messages() {
               <div className="space-y-4">
                 {/* Instâncias List */}
                 <div>
-                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Instâncias
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Instâncias
+                    </h4>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => refetchInstances()}
+                      disabled={instancesLoading}
+                    >
+                      <RefreshCw className={`h-4 w-4 ${instancesLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
                   
                   <div className="space-y-2">
-                    {instances?.filter(instance => instance.isConnected).length > 0 ? (
-                      instances.filter(instance => instance.isConnected).map((instance) => (
-                        <div key={instance.id} className="flex items-center justify-between p-3 border rounded-lg bg-green-50 dark:bg-green-900/20">
+                    {instancesLoading ? (
+                      <div className="text-center py-4">
+                        <RefreshCw className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+                        <p className="text-sm text-muted-foreground">Carregando instâncias...</p>
+                      </div>
+                    ) : instances && instances.length > 0 ? (
+                      instances.map((instance) => (
+                        <div key={instance.id} className={`flex items-center justify-between p-3 border rounded-lg ${
+                          instance.isConnected 
+                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        }`}>
                           <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            <div className={`w-2 h-2 rounded-full ${
+                              instance.isConnected ? 'bg-green-500' : 'bg-red-500'
+                            }`}></div>
                             <div>
                               <p className="font-medium text-sm">{instance.instanceName}</p>
-                              <p className="text-xs text-muted-foreground">Status: Conectado</p>
+                              <p className="text-xs text-muted-foreground">
+                                Status: {instance.isConnected ? 'Conectado' : 'Desconectado'}
+                              </p>
                             </div>
                           </div>
                           <Button 
                             size="sm" 
                             variant="outline"
+                            disabled={!instance.isConnected}
                             onClick={() => {
                               setDispatcherInstance(instance.id.toString());
                               setShowDispatcherDialog(true);
                             }}
                           >
-                            Usar
+                            {instance.isConnected ? 'Usar' : 'Offline'}
                           </Button>
                         </div>
                       ))
                     ) : (
                       <div className="text-center py-6 border-2 border-dashed rounded-lg">
                         <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">Nenhuma instância WhatsApp conectada</p>
+                        <p className="text-sm text-muted-foreground">Nenhuma instância WhatsApp encontrada</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Configure uma instância na seção Evolution API
                         </p>
