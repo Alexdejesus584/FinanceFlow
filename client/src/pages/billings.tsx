@@ -494,7 +494,8 @@ export default function Billings() {
             </CardContent>
           </Card>
         ) : (
-          billings.map((billing: any) => {
+          billings.map((item: any) => {
+            const billing = item.billings || item; // Handle nested structure
             const customer = customers.find((c: any) => c.id === billing.customerId);
             const billingType = billingTypes.find((bt: any) => bt.id === billing.billingTypeId);
             
