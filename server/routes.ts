@@ -526,12 +526,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Extrair QR Code de diferentes possíveis formatos
       let qrCodeData = null;
-      if (qrResponse.qrcode) {
+      if (qrResponse.base64) {
+        qrCodeData = qrResponse.base64;
+      } else if (qrResponse.qrcode) {
         qrCodeData = qrResponse.qrcode;
       } else if (qrResponse.qrCode) {
         qrCodeData = qrResponse.qrCode;
-      } else if (qrResponse.base64) {
-        qrCodeData = qrResponse.base64;
+      } else if (qrResponse.data && qrResponse.data.base64) {
+        qrCodeData = qrResponse.data.base64;
       } else if (qrResponse.data && qrResponse.data.qrcode) {
         qrCodeData = qrResponse.data.qrcode;
       } else if (qrResponse.instance && qrResponse.instance.qrcode) {
