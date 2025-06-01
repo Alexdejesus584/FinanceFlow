@@ -401,14 +401,16 @@ export class Scheduler {
   private async getScheduledMessages(now: Date): Promise<any[]> {
     const { db } = await import('./db');
     const { messageHistory } = await import('@shared/schema');
-    const { lte, eq, and } = await import('drizzle-orm');
+    const { lte, eq, and, isNotNull } = await import('drizzle-orm');
     
+    // Only get messages that are scheduled AND the scheduled time has passed
     return await db
       .select()
       .from(messageHistory)
       .where(
         and(
           eq(messageHistory.status, 'scheduled'),
+          isNotNull(messageHistory.scheduledFor),
           lte(messageHistory.scheduledFor, now)
         )
       )
