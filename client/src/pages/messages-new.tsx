@@ -127,14 +127,25 @@ export default function Messages() {
 
     let scheduledFor = null;
     if (scheduleMessage && scheduleDate && scheduleTime) {
-      scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+      const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+      scheduledFor = scheduledDateTime.toISOString();
+      
+      // Verify scheduled time is in the future
+      if (scheduledDateTime <= new Date()) {
+        toast({
+          title: "Data inválida",
+          description: "A data e horário do agendamento deve ser no futuro.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     dispatchMessageMutation.mutate({
       phone: dispatcherPhone,
       content: dispatcherMessage,
       instanceId: parseInt(selectedInstance),
-      scheduledFor
+      scheduledFor: scheduledFor
     });
   };
 
@@ -281,6 +292,14 @@ export default function Messages() {
                           message += `Em caso de dúvidas, entre em contato conosco.`;
                           
                           setDispatcherMessage(message);
+                          
+                          // Auto-definir data de agendamento com base na data de vencimento
+                          if (bill.dueDate) {
+                            const dueDate = new Date(bill.dueDate);
+                            const formattedDate = dueDate.toISOString().split('T')[0];
+                            setScheduleDate(formattedDate);
+                            setScheduleTime('09:00'); // Define horário padrão 9h
+                          }
                         }
                       }
                     }}
