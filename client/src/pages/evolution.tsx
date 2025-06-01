@@ -124,6 +124,11 @@ function Evolution() {
     },
     onSuccess: (data) => {
       console.log("QR Code Response:", data);
+      console.log("QR Code field:", data.qrCode);
+      console.log("Type of QR Code:", typeof data.qrCode);
+      console.log("QR Code length:", data.qrCode ? data.qrCode.length : 'null/undefined');
+      console.log("Full Response Structure:", JSON.stringify(data, null, 2));
+      
       toast({
         title: "QR Code gerado",
         description: "QR Code gerado com sucesso. Escaneie para conectar.",
