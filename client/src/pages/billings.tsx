@@ -53,10 +53,20 @@ export default function Billings() {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (data: InsertBilling) => apiRequest('/api/billings', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    mutationFn: (data: InsertBilling) => {
+      return fetch('/api/billings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/billings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
