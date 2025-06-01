@@ -555,7 +555,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullResponse: qrResponse // Para debug
       };
       
-      console.log('Sending response to frontend:', JSON.stringify(responseData, null, 2));
+      console.log('Sending response to frontend:');
+      console.log('- qrCode length:', qrCodeData ? qrCodeData.length : 'null');
+      console.log('- qrCode preview:', qrCodeData ? qrCodeData.substring(0, 50) + '...' : 'null');
+      console.log('- Response keys:', Object.keys(responseData));
+      
       res.json(responseData);
     } catch (error) {
       console.error("Error getting QR code:", error);
