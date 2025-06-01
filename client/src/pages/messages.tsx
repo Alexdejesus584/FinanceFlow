@@ -649,7 +649,16 @@ export default function Messages() {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-3 block">Selecione as cobranças para enviar:</label>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Mensagens Agendadas</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => refetchBillings()}
+                >
+                  Atualizar
+                </Button>
+              </div>
               
               {activeBillings && Array.isArray(activeBillings) && activeBillings.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -659,34 +668,49 @@ export default function Messages() {
                     const customer = item.customer || item.customers;
                     
                     return (
-                      <div key={billing.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedBillings.includes(billing.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedBillings([...selectedBillings, billing.id]);
-                              } else {
-                                setSelectedBillings(selectedBillings.filter(id => id !== billing.id));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{customer?.name || billing.customerName || 'Cliente não identificado'}</span>
-                              <Badge variant={billing.status === 'paid' ? 'default' : 'destructive'}>
-                                {billing.status === 'paid' ? 'Pago' : billing.status === 'pending' ? 'Pendente' : 'Ativo'}
-                              </Badge>
+                      <div key={billing.id} className="p-4 border rounded-lg bg-white">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedBillings.includes(billing.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedBillings([...selectedBillings, billing.id]);
+                                } else {
+                                  setSelectedBillings(selectedBillings.filter(id => id !== billing.id));
+                                }
+                              }}
+                              className="mt-1"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                                  Enviada
+                                </Badge>
+                                <span className="text-sm font-medium">Texto</span>
+                                <span className="text-xs text-muted-foreground">
+                                  Agendada: {billing.dueDate ? new Date(billing.dueDate).toLocaleDateString('pt-BR', { 
+                                    day: '2-digit', 
+                                    month: '2-digit', 
+                                    year: 'numeric' 
+                                  }) : 'Data não definida'}, {billing.dueDate ? new Date(billing.dueDate).toLocaleTimeString('pt-BR', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }) : '08:00'}
+                                </span>
+                              </div>
+                              <p className="font-medium text-sm mb-1">
+                                Para: {customer?.phone || customer?.whatsapp || '5575988259889'}
+                              </p>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                <span className="font-medium">{customer?.name || 'Cliente'}</span> 😊 Só passando para lembrar que o vencimento da sua assinatura de {billing.description || 'TV Online'} está próxim...
+                              </p>
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              R$ {typeof billing.amount === 'number' ? billing.amount.toFixed(2) : '0,00'} - Vence: {billing.dueDate ? new Date(billing.dueDate).toLocaleDateString('pt-BR') : 'Data não definida'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {billing.description || 'Sem descrição'}
-                            </p>
                           </div>
+                          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                            🗑️
+                          </Button>
                         </div>
                       </div>
                     );
