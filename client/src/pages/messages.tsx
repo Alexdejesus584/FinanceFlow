@@ -678,7 +678,7 @@ export default function Messages() {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            R$ {billing.billings.amount?.toFixed(2) || '0,00'} - Vence: {billing.billings.dueDate ? new Date(billing.billings.dueDate).toLocaleDateString('pt-BR') : 'Data não definida'}
+                            R$ {typeof billing.billings.amount === 'number' ? billing.billings.amount.toFixed(2) : '0,00'} - Vence: {billing.billings.dueDate ? new Date(billing.billings.dueDate).toLocaleDateString('pt-BR') : 'Data não definida'}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {billing.billings.description || 'Sem descrição'}
