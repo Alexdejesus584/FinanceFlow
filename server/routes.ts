@@ -503,11 +503,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         globalApiKey: settings.globalApiKey.trim()
       });
 
-      const qrResponse = await evolutionClient.getQRCode(instance.instanceName);
+      // Primeiro buscar todas as instâncias para encontrar o nome real
+      const allInstances = await evolutionClient.listInstances();
+      
+      // Encontrar a instância pelo nome (ignorando espaços)
+      const realInstance = allInstances.find(inst => 
+        inst.name && inst.name.trim() === instance.instanceName.trim()
+      );
+      
+      if (!realInstance) {
+        return res.status(404).json({ 
+          message: "Instance not found in Evolution API",
+          instanceName: instance.instanceName 
+        });
+      }
+
+      // Usar o nome real da instância da Evolution API
+      const qrResponse = await evolutionClient.getQRCode(realInstance.name);
       
       res.json({
-        qrCode: qrResponse.qrcode,
-        instance: qrResponse.instance
+        qrCode: qrResponse.qrcode || qrResponse.qrCode || qrResponse.base64,
+        instance: qrResponse.instance,
+        realInstanceName: realInstance.name
       });
     } catch (error) {
       console.error("Error getting QR code:", error);
