@@ -120,14 +120,14 @@ function Evolution() {
   // Mutation para gerar QR Code
   const generateQR = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/evolution-instances/${id}/qrcode`, "GET");
+      const response = await apiRequest(`/api/evolution-instances/${id}/qrcode`, "GET");
+      return await response.json();
     },
     onSuccess: (data) => {
       console.log("QR Code Response:", data);
       console.log("QR Code field:", data.qrCode);
       console.log("Type of QR Code:", typeof data.qrCode);
       console.log("QR Code length:", data.qrCode ? data.qrCode.length : 'null/undefined');
-      console.log("Full Response Structure:", JSON.stringify(data, null, 2));
       
       toast({
         title: "QR Code gerado",
