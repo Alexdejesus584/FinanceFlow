@@ -90,13 +90,15 @@ export const messageTemplates = pgTable("message_templates", {
 export const messageHistory = pgTable("message_history", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  customerId: integer("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  customerId: integer("customer_id").references(() => customers.id, { onDelete: "cascade" }),
   billingId: integer("billing_id").references(() => billings.id),
   templateId: integer("template_id").references(() => messageTemplates.id),
   content: text("content").notNull(),
   method: varchar("method").notNull(), // 'email', 'whatsapp'
-  status: varchar("status").notNull(), // 'sent', 'failed', 'pending'
+  status: varchar("status").notNull(), // 'sent', 'failed', 'pending', 'scheduled'
   sentAt: timestamp("sent_at"),
+  scheduledFor: timestamp("scheduled_for"),
+  recipientPhone: varchar("recipient_phone"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

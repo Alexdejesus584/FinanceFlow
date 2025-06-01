@@ -831,7 +831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/dispatch-message', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { phone, content, instanceId } = req.body;
+      const { phone, content, instanceId, scheduledFor } = req.body;
       
       if (!phone || !content || !instanceId) {
         return res.status(400).json({ message: "Phone, content and instanceId are required" });

@@ -34,6 +34,8 @@ export default function Messages() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [selectedBilling, setSelectedBilling] = useState<string>("");
   const [scheduleMessage, setScheduleMessage] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
   const [showBillingDialog, setShowBillingDialog] = useState(false);
   const [selectedBillings, setSelectedBillings] = useState<number[]>([]);
 
@@ -114,10 +116,25 @@ export default function Messages() {
       return;
     }
 
+    if (scheduleMessage && (!scheduleDate || !scheduleTime)) {
+      toast({
+        title: "Agendamento incompleto",
+        description: "Preencha a data e horário para agendamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let scheduledFor = null;
+    if (scheduleMessage && scheduleDate && scheduleTime) {
+      scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+    }
+
     dispatchMessageMutation.mutate({
       phone: dispatcherPhone,
       content: dispatcherMessage,
-      instanceId: parseInt(selectedInstance)
+      instanceId: parseInt(selectedInstance),
+      scheduledFor
     });
   };
 
@@ -322,7 +339,7 @@ export default function Messages() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="space-y-3">
                   <label className="flex items-center space-x-2">
                     <input 
                       type="checkbox" 
@@ -332,6 +349,30 @@ export default function Messages() {
                     />
                     <span className="text-sm">Agendar Envio</span>
                   </label>
+                  
+                  {scheduleMessage && (
+                    <div className="grid grid-cols-2 gap-3 pl-6">
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Data</label>
+                        <input
+                          type="date"
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full p-2 border rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Horário</label>
+                        <input
+                          type="time"
+                          value={scheduleTime}
+                          onChange={(e) => setScheduleTime(e.target.value)}
+                          className="w-full p-2 border rounded-lg text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex space-x-2">
