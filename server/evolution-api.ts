@@ -69,20 +69,17 @@ export class EvolutionAPIClient {
     }
   }
 
-  // Criar uma nova instância
+  // Criar uma nova instância (Evolution API v2.2.3)
   async createInstance(instanceData: CreateInstanceRequest): Promise<InstanceInfo> {
-    // Enviar apenas os campos básicos requeridos
+    // Para Evolution API v2.2.3, testar diferentes formatos
     const requestData = {
       instanceName: instanceData.instanceName,
-      token: instanceData.token || undefined
+      token: instanceData.token,
+      qrcode: true,
+      integration: "WHATSAPP-BAILEYS" // Tentar com integração específica
     };
     
-    // Remover campos undefined
-    const cleanData = Object.fromEntries(
-      Object.entries(requestData).filter(([_, value]) => value !== undefined)
-    );
-    
-    return await this.makeRequest('/instance/create', 'POST', cleanData);
+    return await this.makeRequest('/instance/create', 'POST', requestData);
   }
 
   // Obter informações de uma instância
