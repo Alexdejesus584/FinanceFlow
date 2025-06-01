@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,9 @@ function Evolution() {
   const [showNewInstanceDialog, setShowNewInstanceDialog] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<any>(null);
+  const [qrCodeTimer, setQrCodeTimer] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [currentQrInstanceId, setCurrentQrInstanceId] = useState<number | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const [globalSettings, setGlobalSettings] = useState({
     globalApiUrl: "https://evolutionapi3.m2vendas.com.br",
@@ -117,13 +120,42 @@ function Evolution() {
     },
   });
 
+  // Timer para renovação automática do QR Code
+  useEffect(() => {
+    if (qrCodeTimer) {
+      const interval = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            // Tempo esgotado, gerar novo QR Code
+            if (currentQrInstanceId) {
+              generateQR.mutate(currentQrInstanceId);
+            }
+            return 60; // Reset para 60 segundos
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [qrCodeTimer, currentQrInstanceId]);
+
+  // Limpar timer quando fechar o dialog
+  useEffect(() => {
+    if (!showQRDialog) {
+      setQrCodeTimer(null);
+      setTimeRemaining(0);
+      setCurrentQrInstanceId(null);
+    }
+  }, [showQRDialog]);
+
   // Mutation para gerar QR Code
   const generateQR = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest(`/api/evolution-instances/${id}/qrcode`, "GET");
       return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, instanceId) => {
       console.log("QR Code Response:", data);
       console.log("QR Code field:", data.qrCode);
       console.log("Type of QR Code:", typeof data.qrCode);
@@ -131,10 +163,14 @@ function Evolution() {
       
       toast({
         title: "QR Code gerado",
-        description: "QR Code gerado com sucesso. Escaneie para conectar.",
+        description: "QR Code gerado com sucesso. Escaneie em até 60 segundos.",
       });
+      
       queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
       setQrCodeData(data);
+      setCurrentQrInstanceId(instanceId);
+      setTimeRemaining(60); // 60 segundos para escanear
+      setQrCodeTimer(Date.now());
       setShowQRDialog(true);
     },
     onError: (error) => {
@@ -561,9 +597,22 @@ function Evolution() {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Escaneie este QR Code com o WhatsApp para conectar a instância
                   </p>
+                  {timeRemaining > 0 && (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                        Tempo restante: {timeRemaining}s
+                      </p>
+                    </div>
+                  )}
                   <p className="text-xs text-gray-500 dark:text-gray-500">
                     Abra o WhatsApp → Menu → Dispositivos conectados → Conectar um dispositivo
                   </p>
+                  {timeRemaining <= 10 && timeRemaining > 0 && (
+                    <p className="text-xs text-orange-500 font-medium">
+                      QR Code expirará em breve. Será renovado automaticamente.
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
