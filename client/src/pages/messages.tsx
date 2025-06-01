@@ -68,7 +68,7 @@ export default function Messages() {
     enabled: showSendMessageDialog,
   });
 
-  const { data: pendingBillings } = useQuery({
+  const { data: billings, refetch: refetchBillings } = useQuery({
     queryKey: ["/api/billings"],
   });
 
@@ -77,10 +77,10 @@ export default function Messages() {
     enabled: true, // Sempre carregar instâncias para o Disparador
   });
 
-  const { data: billings, refetch: refetchBillings } = useQuery({
-    queryKey: ["/api/billings"],
-    enabled: showBillingDispatcherDialog,
-  });
+  // Filter pending billings for the dispatcher
+  const pendingBillings = Array.isArray(billings) ? billings.filter((billing: any) => 
+    billing.billings?.status !== 'paid'
+  ) : [];
 
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -716,13 +716,15 @@ export default function Messages() {
                 </Button>
                 <Button 
                   onClick={() => {
-                    // Aqui será implementada a função de envio das cobranças
-                    console.log('Enviando cobranças:', selectedBillings);
+                    sendBillingNotificationsMutation.mutate({
+                      instanceId: parseInt(dispatcherInstance),
+                      billingIds: selectedBillings
+                    });
                   }}
-                  disabled={dispatchMessageMutation.isPending || selectedBillings.length === 0}
+                  disabled={sendBillingNotificationsMutation.isPending || selectedBillings.length === 0}
                   className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  {dispatchMessageMutation.isPending ? "Enviando..." : `Enviar ${selectedBillings.length} Cobrança(s)`}
+                  {sendBillingNotificationsMutation.isPending ? "Enviando..." : `Enviar ${selectedBillings.length} Cobrança(s)`}
                 </Button>
               </div>
             </div>
