@@ -340,9 +340,9 @@ export default function Messages() {
                     }}
                   >
                     <option value="">Selecione um template de cobrança</option>
-                    {templates?.filter(template => template.triggerType === 'billing').map((template) => (
+                    {templates?.map((template) => (
                       <option key={template.id} value={template.id.toString()}>
-                        {template.name}
+                        {template.name} {template.triggerType ? `(${template.triggerType})` : ''}
                       </option>
                     ))}
                   </select>
