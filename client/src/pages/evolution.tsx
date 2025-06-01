@@ -535,38 +535,16 @@ function Evolution() {
               <div className="text-center space-y-4">
                 <div className="bg-white p-4 rounded-lg mx-auto inline-block">
                   {/* Detectar formato do QR Code */}
-                  {qrCodeData.qrcode ? (
+                  {(qrCodeData.qrcode || qrCodeData.qrCode || qrCodeData.base64) ? (
                     <img 
-                      src={qrCodeData.qrcode.startsWith('data:') ? qrCodeData.qrcode : `data:image/png;base64,${qrCodeData.qrcode}`}
+                      src={qrCodeData.qrcode || qrCodeData.qrCode || qrCodeData.base64}
                       alt="QR Code"
                       className="w-64 h-64 mx-auto"
                       onError={(e) => {
-                        console.log('Erro ao carregar QR Code (qrcode):', qrCodeData);
+                        console.log('Erro ao carregar QR Code:', qrCodeData);
                         e.currentTarget.style.display = 'none';
                       }}
-                      onLoad={() => console.log('QR Code carregado com sucesso (qrcode)')}
-                    />
-                  ) : qrCodeData.qrCode ? (
-                    <img 
-                      src={qrCodeData.qrCode.startsWith('data:') ? qrCodeData.qrCode : `data:image/png;base64,${qrCodeData.qrCode}`}
-                      alt="QR Code"
-                      className="w-64 h-64 mx-auto"
-                      onError={(e) => {
-                        console.log('Erro ao carregar QR Code (qrCode):', qrCodeData);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                      onLoad={() => console.log('QR Code carregado com sucesso (qrCode)')}
-                    />
-                  ) : qrCodeData.base64 ? (
-                    <img 
-                      src={qrCodeData.base64.startsWith('data:') ? qrCodeData.base64 : `data:image/png;base64,${qrCodeData.base64}`}
-                      alt="QR Code"
-                      className="w-64 h-64 mx-auto"
-                      onError={(e) => {
-                        console.log('Erro ao carregar QR Code (base64):', qrCodeData);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                      onLoad={() => console.log('QR Code carregado com sucesso (base64)')}
+                      onLoad={() => console.log('QR Code carregado com sucesso')}
                     />
                   ) : (
                     <div className="w-64 h-64 mx-auto flex items-center justify-center border-2 border-dashed border-gray-300 rounded">
