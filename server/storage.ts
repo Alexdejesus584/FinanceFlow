@@ -323,6 +323,18 @@ export class DatabaseStorage implements IStorage {
     return newMessage;
   }
 
+  async updateMessageHistory(messageId: number, updates: {
+    status?: string;
+    sentAt?: Date;
+  }): Promise<MessageHistory> {
+    const [updatedMessage] = await db
+      .update(messageHistory)
+      .set(updates)
+      .where(eq(messageHistory.id, messageId))
+      .returning();
+    return updatedMessage;
+  }
+
   // Calendar event operations
   async getCalendarEvents(userId: string, startDate?: string, endDate?: string): Promise<(CalendarEvent & { billing?: Billing & { customer: Customer } })[]> {
     let query = db

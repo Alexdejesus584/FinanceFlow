@@ -31,6 +31,9 @@ export class Scheduler {
     // Update overdue statuses every hour
     this.scheduleJob('update-overdue-status', '0 * * * *', this.updateOverdueStatuses.bind(this));
     
+    // Process scheduled messages every minute
+    this.scheduleJob('scheduled-messages', '* * * * *', this.processScheduledMessages.bind(this));
+    
     console.log('Scheduler started successfully');
   }
 
@@ -370,6 +373,102 @@ export class Scheduler {
     }
     
     return nextDate;
+  }
+
+  /**
+   * Process scheduled messages
+   */
+  private async processScheduledMessages() {
+    try {
+      console.log('Processing scheduled messages...');
+      
+      const now = new Date();
+      const scheduledMessages = await this.getScheduledMessages(now);
+      
+      for (const message of scheduledMessages) {
+        await this.sendScheduledMessage(message);
+      }
+      
+      console.log(`Processed ${scheduledMessages.length} scheduled messages`);
+    } catch (error) {
+      console.error('Error processing scheduled messages:', error);
+    }
+  }
+
+  /**
+   * Get scheduled messages that should be sent now
+   */
+  private async getScheduledMessages(now: Date): Promise<any[]> {
+    const { db } = await import('./db');
+    const { messageHistory } = await import('@shared/schema');
+    const { lte, eq, and } = await import('drizzle-orm');
+    
+    return await db
+      .select()
+      .from(messageHistory)
+      .where(
+        and(
+          eq(messageHistory.status, 'scheduled'),
+          lte(messageHistory.scheduledFor, now)
+        )
+      )
+      .execute();
+  }
+
+  /**
+   * Send a scheduled message
+   */
+  private async sendScheduledMessage(message: any) {
+    try {
+      const { storage } = await import('./storage');
+      const { EvolutionAPIClient } = await import('./evolution-api');
+      
+      // Get user's Evolution API settings
+      const settings = await storage.getEvolutionSettings(message.userId);
+      if (!settings) {
+        console.error(`No Evolution API settings found for user ${message.userId}`);
+        return;
+      }
+
+      // Get first connected instance for the user
+      const instances = await storage.getEvolutionInstances(message.userId);
+      const connectedInstance = instances.find((inst: any) => inst.isConnected);
+      
+      if (!connectedInstance) {
+        console.error(`No connected WhatsApp instance found for user ${message.userId}`);
+        return;
+      }
+
+      const evolutionClient = new EvolutionAPIClient({
+        baseUrl: settings.globalApiUrl,
+        globalApiKey: settings.globalApiKey,
+      });
+
+      // Send the message
+      const whatsappResponse = await evolutionClient.sendTextMessage(
+        connectedInstance.instanceName,
+        `${message.recipientPhone}@s.whatsapp.net`,
+        message.content
+      );
+
+      const success = whatsappResponse && !whatsappResponse.error;
+
+      // Update message status
+      await storage.updateMessageHistory(message.id, {
+        status: success ? 'sent' : 'failed',
+        sentAt: success ? new Date() : undefined
+      });
+
+      console.log(`Scheduled message ${message.id} ${success ? 'sent successfully' : 'failed'}`);
+    } catch (error) {
+      console.error(`Error sending scheduled message ${message.id}:`, error);
+      
+      // Mark as failed
+      const { storage } = await import('./storage');
+      await storage.updateMessageHistory(message.id, {
+        status: 'failed'
+      });
+    }
   }
 
   /**
