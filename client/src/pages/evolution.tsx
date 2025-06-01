@@ -32,7 +32,8 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  Save
+  Save,
+  Sync
 } from "lucide-react";
 import { EvolutionInstance, EvolutionSettings } from "@shared/schema";
 

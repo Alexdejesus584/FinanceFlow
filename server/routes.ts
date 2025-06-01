@@ -14,6 +14,7 @@ import {
 import { z } from "zod";
 import { emailService } from "./email-service";
 import { scheduler } from "./scheduler";
+import { statusSyncService } from "./status-sync";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -376,6 +377,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting evolution instance:", error);
       res.status(500).json({ message: "Failed to delete evolution instance" });
+    }
+  });
+
+  // Sincronizar status da instância
+  app.post('/api/evolution-instances/:id/sync-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      
+      await statusSyncService.syncInstanceStatus(id, userId);
+      
+      res.json({ message: "Instance status synchronized successfully" });
+    } catch (error) {
+      console.error("Error syncing instance status:", error);
+      res.status(500).json({ message: "Failed to sync instance status" });
     }
   });
 
@@ -753,6 +769,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to send message" });
     }
   });
+
+  // Inicializar scheduler
+  scheduler.start();
+  
+  // Inicializar sincronização de status das instâncias
+  statusSyncService.startSync();
 
   const httpServer = createServer(app);
   return httpServer;
