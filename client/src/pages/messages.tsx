@@ -653,38 +653,44 @@ export default function Messages() {
               
               {activeBillings && Array.isArray(activeBillings) && activeBillings.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {activeBillings.map((billing: any) => (
-                    <div key={billing.billings.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedBillings.includes(billing.billings.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedBillings([...selectedBillings, billing.billings.id]);
-                            } else {
-                              setSelectedBillings(selectedBillings.filter(id => id !== billing.billings.id));
-                            }
-                          }}
-                          className="rounded"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{billing.customer?.name || 'Cliente não identificado'}</span>
-                            <Badge variant={billing.billings.status === 'paid' ? 'default' : 'destructive'}>
-                              {billing.billings.status === 'paid' ? 'Pago' : 'Pendente'}
-                            </Badge>
+                  {activeBillings.map((item: any) => {
+                    // Handle both direct billing objects and nested billing structures
+                    const billing = item.billings || item;
+                    const customer = item.customer || item.customers;
+                    
+                    return (
+                      <div key={billing.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedBillings.includes(billing.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedBillings([...selectedBillings, billing.id]);
+                              } else {
+                                setSelectedBillings(selectedBillings.filter(id => id !== billing.id));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">{customer?.name || billing.customerName || 'Cliente não identificado'}</span>
+                              <Badge variant={billing.status === 'paid' ? 'default' : 'destructive'}>
+                                {billing.status === 'paid' ? 'Pago' : billing.status === 'pending' ? 'Pendente' : 'Ativo'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              R$ {typeof billing.amount === 'number' ? billing.amount.toFixed(2) : '0,00'} - Vence: {billing.dueDate ? new Date(billing.dueDate).toLocaleDateString('pt-BR') : 'Data não definida'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {billing.description || 'Sem descrição'}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            R$ {typeof billing.billings.amount === 'number' ? billing.billings.amount.toFixed(2) : '0,00'} - Vence: {billing.billings.dueDate ? new Date(billing.billings.dueDate).toLocaleDateString('pt-BR') : 'Data não definida'}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {billing.billings.description || 'Sem descrição'}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8 border-2 border-dashed rounded-lg">
