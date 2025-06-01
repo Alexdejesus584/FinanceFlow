@@ -47,6 +47,10 @@ export default function Messages() {
   const [messageContent, setMessageContent] = useState("");
   const [messageMethod, setMessageMethod] = useState<string>("email");
   const [selectedInstance, setSelectedInstance] = useState<string>("");
+  const [showDispatcherDialog, setShowDispatcherDialog] = useState(false);
+  const [dispatcherPhone, setDispatcherPhone] = useState("");
+  const [dispatcherMessage, setDispatcherMessage] = useState("");
+  const [dispatcherInstance, setDispatcherInstance] = useState<string>("");
 
   const { data: templates, isLoading: templatesLoading } = useQuery<MessageTemplate[]>({
     queryKey: ["/api/message-templates"],
@@ -63,7 +67,7 @@ export default function Messages() {
 
   const { data: instances } = useQuery<EvolutionInstance[]>({
     queryKey: ["/api/evolution-instances"],
-    enabled: showSendMessageDialog && messageMethod === "whatsapp",
+    enabled: (showSendMessageDialog && messageMethod === "whatsapp") || showDispatcherDialog,
   });
 
   const deleteTemplateMutation = useMutation({
@@ -106,6 +110,31 @@ export default function Messages() {
       toast({
         title: "Erro",
         description: error.message || "Falha ao enviar mensagem.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const dispatchMessageMutation = useMutation({
+    mutationFn: async (data: { phone: string; content: string; instanceId: number }) => {
+      const response = await apiRequest("/api/dispatch-message", "POST", data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/message-history"] });
+      toast({
+        title: "Mensagem disparada",
+        description: "Mensagem enviada com sucesso para o número especificado.",
+      });
+      setShowDispatcherDialog(false);
+      setDispatcherPhone("");
+      setDispatcherMessage("");
+      setDispatcherInstance("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro no disparador",
+        description: "Falha ao enviar mensagem WhatsApp.",
         variant: "destructive",
       });
     },
@@ -156,6 +185,32 @@ export default function Messages() {
       content: messageContent,
       method: messageMethod,
       instanceId: selectedInstance ? Number(selectedInstance) : undefined,
+    });
+  };
+
+  const handleDispatchMessage = () => {
+    if (!dispatcherPhone.trim() || !dispatcherMessage.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Digite o número do WhatsApp e a mensagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!dispatcherInstance) {
+      toast({
+        title: "Instância obrigatória",
+        description: "Selecione uma instância WhatsApp conectada.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    dispatchMessageMutation.mutate({
+      phone: dispatcherPhone,
+      content: dispatcherMessage,
+      instanceId: Number(dispatcherInstance),
     });
   };
 
@@ -233,6 +288,14 @@ export default function Messages() {
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Enviar
+                  </Button>
+                  <Button 
+                    onClick={() => setShowDispatcherDialog(true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Disparador
                   </Button>
                   <Button 
                     onClick={() => setShowTemplateForm(true)}
