@@ -169,25 +169,24 @@ export default function Billings() {
 
   // Função para formatar valor para exibição no input (ex: 20.5 -> "20,50")
   const formatCurrencyInput = (value: number): string => {
+    if (!value) return "";
     return value.toFixed(2).replace('.', ',');
   };
 
   // Função para converter valor brasileiro para número (ex: "20,50" -> 20.5)
   const parseBrazilianCurrency = (value: string): number => {
-    // Remove todos os caracteres exceto números, vírgula e ponto
-    const cleanValue = value.replace(/[^\d,\.]/g, '');
+    if (!value) return 0;
     
-    // Se tem vírgula, trata como decimal brasileiro
+    // Remove espaços e caracteres não numéricos exceto vírgula
+    const cleanValue = value.replace(/[^\d,]/g, '');
+    
+    // Se tem vírgula, converte para formato americano
     if (cleanValue.includes(',')) {
-      const parts = cleanValue.split(',');
-      const integerPart = parts[0].replace(/\./g, ''); // Remove pontos (milhares)
-      const decimalPart = parts[1] ? parts[1].substring(0, 2) : '00'; // Máximo 2 decimais
-      return parseFloat(`${integerPart}.${decimalPart}`) || 0;
+      return parseFloat(cleanValue.replace(',', '.')) || 0;
     }
     
-    // Se só tem números, trata como centavos se menor que 100, senão como reais
-    const numValue = parseFloat(cleanValue) || 0;
-    return numValue;
+    // Se só números, trata como valor direto
+    return parseFloat(cleanValue) || 0;
   };
 
   if (billingsLoading) {
@@ -309,13 +308,12 @@ export default function Billings() {
                         <FormLabel>Valor (R$)</FormLabel>
                         <FormControl>
                           <Input 
-                            type="text" 
-                            placeholder="20,50" 
-                            value={field.value ? formatCurrencyInput(field.value) : ""}
-                            onChange={(e) => {
-                              const value = parseBrazilianCurrency(e.target.value);
-                              field.onChange(value);
-                            }}
+                            type="number" 
+                            step="0.01"
+                            min="0"
+                            placeholder="20.50" 
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           />
                         </FormControl>
                         <FormMessage />
