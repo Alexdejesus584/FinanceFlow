@@ -207,6 +207,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBilling(id: number, userId: string): Promise<boolean> {
+    // First delete related calendar events
+    await db
+      .delete(calendarEvents)
+      .where(and(eq(calendarEvents.billingId, id), eq(calendarEvents.userId, userId)));
+    
+    // Then delete the billing
     const result = await db
       .delete(billings)
       .where(and(eq(billings.id, id), eq(billings.userId, userId)));
