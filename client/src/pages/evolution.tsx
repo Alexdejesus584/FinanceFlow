@@ -189,7 +189,11 @@ function Evolution() {
       return;
     }
 
-    if (!newInstance.token.trim()) {
+    // Se token personalizado estiver desabilitado, gerar token automaticamente
+    let finalToken = newInstance.token;
+    if (!newInstance.useCustomToken) {
+      finalToken = `token_${newInstance.instanceName}_${Date.now()}`;
+    } else if (!newInstance.token.trim()) {
       toast({
         title: "Token obrigatório",
         description: "Por favor, insira o token da instância.",
@@ -198,7 +202,10 @@ function Evolution() {
       return;
     }
 
-    createInstance.mutate(newInstance);
+    createInstance.mutate({
+      ...newInstance,
+      token: finalToken
+    });
   };
 
   const filteredInstances = instances.filter(instance =>
