@@ -290,21 +290,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/evolution-instances', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const validatedData = insertEvolutionInstanceSchema.parse(req.body);
+      const { instanceName, token, channel, phoneNumber } = req.body;
       
-      const instance = await storage.createEvolutionInstance({
-        ...validatedData,
-        userId,
+      // Buscar configurações globais do usuário
+      const settings = await storage.getEvolutionSettings(userId);
+      if (!settings) {
+        return res.status(400).json({ message: "Evolution API not configured. Please configure global settings first." });
+      }
+
+      // Criar cliente da Evolution API
+      const evolutionClient = new EvolutionAPIClient({
+        baseUrl: settings.globalApiUrl,
+        globalApiKey: settings.globalApiKey.trim()
       });
+
+      // Criar instância na Evolution API primeiro
+      const instanceData = {
+        instanceName: instanceName.trim()
+      };
       
-      res.status(201).json(instance);
+      if (token && token.trim()) {
+        instanceData.token = token.trim();
+      }
+
+      console.log("Creating Evolution API instance:", instanceData);
+      const evolutionResponse = await evolutionClient.createInstance(instanceData);
+      console.log("Evolution API response:", JSON.stringify(evolutionResponse, null, 2));
+
+      // Salvar instância no banco de dados local com dados da Evolution API
+      const dbInstance = await storage.createEvolutionInstance({
+        instanceName: evolutionResponse.instance?.instanceName || instanceName,
+        token: evolutionResponse.hash?.apikey || token || '',
+        channel: channel || 'whatsapp-web',
+        phoneNumber: phoneNumber || null,
+        status: 'created',
+        isConnected: false,
+        qrCode: null,
+        userId
+      });
+
+      res.status(201).json(dbInstance);
     } catch (error) {
       console.error("Error creating evolution instance:", error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid data", errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Failed to create evolution instance" });
-      }
+      res.status(500).json({ 
+        message: "Failed to create evolution instance",
+        error: error.message 
+      });
     }
   });
 
@@ -548,19 +579,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('QR Code NOT found in any expected field');
       }
       
+      // Criar resposta simples e direta
       const responseData = {
-        qrCode: qrCodeData,
-        instance: qrResponse.instance,
-        realInstanceName: realInstance.name,
-        fullResponse: qrResponse // Para debug
+        qrCode: qrCodeData
       };
       
       console.log('Sending response to frontend:');
       console.log('- qrCode length:', qrCodeData ? qrCodeData.length : 'null');
       console.log('- qrCode preview:', qrCodeData ? qrCodeData.substring(0, 50) + '...' : 'null');
-      console.log('- Response keys:', Object.keys(responseData));
+      console.log('- Response data:', JSON.stringify(responseData).substring(0, 100) + '...');
       
-      res.json(responseData);
+      // Enviar resposta sem campos extras que podem causar problemas de serialização
+      res.status(200).json(responseData);
     } catch (error) {
       console.error("Error getting QR code:", error);
       res.status(500).json({ 
