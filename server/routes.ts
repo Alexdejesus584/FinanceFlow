@@ -528,24 +528,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let qrCodeData = null;
       if (qrResponse.base64) {
         qrCodeData = qrResponse.base64;
+        console.log('QR Code found in base64 field');
       } else if (qrResponse.qrcode) {
         qrCodeData = qrResponse.qrcode;
+        console.log('QR Code found in qrcode field');
       } else if (qrResponse.qrCode) {
         qrCodeData = qrResponse.qrCode;
+        console.log('QR Code found in qrCode field');
       } else if (qrResponse.data && qrResponse.data.base64) {
         qrCodeData = qrResponse.data.base64;
+        console.log('QR Code found in data.base64 field');
       } else if (qrResponse.data && qrResponse.data.qrcode) {
         qrCodeData = qrResponse.data.qrcode;
+        console.log('QR Code found in data.qrcode field');
       } else if (qrResponse.instance && qrResponse.instance.qrcode) {
         qrCodeData = qrResponse.instance.qrcode;
+        console.log('QR Code found in instance.qrcode field');
+      } else {
+        console.log('QR Code NOT found in any expected field');
       }
       
-      res.json({
+      const responseData = {
         qrCode: qrCodeData,
         instance: qrResponse.instance,
         realInstanceName: realInstance.name,
         fullResponse: qrResponse // Para debug
-      });
+      };
+      
+      console.log('Sending response to frontend:', JSON.stringify(responseData, null, 2));
+      res.json(responseData);
     } catch (error) {
       console.error("Error getting QR code:", error);
       res.status(500).json({ 
