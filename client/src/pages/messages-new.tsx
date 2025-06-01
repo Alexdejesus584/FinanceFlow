@@ -323,14 +323,20 @@ export default function Messages() {
             {activeTab === 'schedules' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Mensagens Agendadas</h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowBillingDialog(true)}
-                  >
-                    Processar Cobranças
-                  </Button>
+                  <h3 className="text-lg font-semibold">Cobranças do Sistema</h3>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">
+                      {activeBillings.length} cobrança(s) ativa(s)
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowBillingDialog(true)}
+                      disabled={!selectedInstance}
+                    >
+                      Enviar Lembretes
+                    </Button>
+                  </div>
                 </div>
                 
                 {activeBillings && activeBillings.length > 0 ? (
@@ -339,29 +345,48 @@ export default function Messages() {
                       const billing = item.billings || item;
                       const customer = item.customer || item.customers;
                       
+                      // Determinar status da cobrança
+                      const isOverdue = billing.dueDate && new Date(billing.dueDate) < new Date();
+                      const statusText = billing.status === 'paid' ? 'Pago' : isOverdue ? 'Vencido' : 'Ativo';
+                      const statusColor = billing.status === 'paid' ? 'bg-green-50 text-green-700' : 
+                                         isOverdue ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700';
+                      
                       return (
-                        <div key={billing.id} className="p-4 border rounded-lg bg-white">
+                        <div key={billing.id} className="p-4 border rounded-lg bg-white hover:bg-gray-50">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
-                                  Enviada
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="secondary" className={statusColor}>
+                                  {statusText}
                                 </Badge>
-                                <span className="text-sm font-medium">Texto</span>
+                                <span className="text-sm font-medium">{billing.description || 'Cobrança'}</span>
                                 <span className="text-xs text-muted-foreground">
-                                  Agendada: {billing.dueDate ? new Date(billing.dueDate).toLocaleDateString('pt-BR') : 'Data não definida'}, 19:28
+                                  Vence: {billing.dueDate ? new Date(billing.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}
                                 </span>
                               </div>
                               <p className="font-medium text-sm mb-1">
-                                Para: {customer?.phone || customer?.whatsapp || '5575988259889'}
+                                Cliente: {customer?.name || 'Nome não informado'}
                               </p>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                <span className="font-medium">{customer?.name || 'Cliente'}</span> 😊 Só passando para lembrar que o vencimento da sua assinatura de {billing.description || 'TV Online'} está próxim...
+                              <p className="text-sm text-muted-foreground mb-1">
+                                Telefone: {customer?.phone || customer?.whatsapp || 'Não cadastrado'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Valor: <span className="font-medium">R$ {typeof billing.amount === 'number' ? billing.amount.toFixed(2) : '0,00'}</span>
                               </p>
                             </div>
-                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
-                              🗑️
-                            </Button>
+                            <div className="flex items-center space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedBillings([billing.id]);
+                                  setShowBillingDialog(true);
+                                }}
+                                disabled={!selectedInstance || billing.status === 'paid'}
+                              >
+                                Enviar Lembrete
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -369,8 +394,11 @@ export default function Messages() {
                   </div>
                 ) : (
                   <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                    <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Nenhuma mensagem agendada</p>
+                    <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Nenhuma cobrança encontrada</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Crie cobranças no calendário para enviar lembretes automáticos
+                    </p>
                   </div>
                 )}
               </div>
