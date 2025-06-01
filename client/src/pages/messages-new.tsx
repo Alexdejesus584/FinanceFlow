@@ -243,14 +243,34 @@ export default function Messages() {
                         if (billing) {
                           const bill = billing.billings || billing;
                           const customer = billing.customer || billing.customers;
-                          setDispatcherPhone(customer?.phone || customer?.whatsapp || "");
+                          
+                          // Format phone number with +55 prefix
+                          let phone = customer?.phone || customer?.whatsapp || "";
+                          if (phone && !phone.startsWith("55")) {
+                            // Remove any non-numeric characters
+                            phone = phone.replace(/\D/g, '');
+                            // Add 55 prefix if not present
+                            phone = "55" + phone;
+                          }
+                          setDispatcherPhone(phone || "55");
                           
                           // Auto-preencher mensagem com template de cobrança
                           const template = templates?.find(t => t.triggerType === 'billing');
                           if (template) {
                             let message = template.content;
                             message = message.replace('{nome}', customer?.name || 'Cliente');
-                            message = message.replace('{valor}', `R$ ${typeof bill.amount === 'number' ? bill.amount.toFixed(2) : '0,00'}`);
+                            
+                            // Format amount correctly - handle both string and number
+                            let amount = bill.amount;
+                            if (typeof amount === 'string') {
+                              // Convert Brazilian format (20,50) to number
+                              amount = parseFloat(amount.replace(',', '.'));
+                            }
+                            const formattedAmount = typeof amount === 'number' && !isNaN(amount) 
+                              ? amount.toFixed(2).replace('.', ',') 
+                              : '0,00';
+                            
+                            message = message.replace('{valor}', `R$ ${formattedAmount}`);
                             message = message.replace('{servico}', bill.description || 'Serviço');
                             message = message.replace('{data}', bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('pt-BR') : '');
                             setDispatcherMessage(message);
@@ -265,7 +285,15 @@ export default function Messages() {
                       const customer = item.customer || item.customers;
                       return (
                         <option key={billing.id} value={billing.id.toString()}>
-                          {customer?.name || 'Cliente'} - {billing.description || 'Cobrança'} - R$ {typeof billing.amount === 'number' ? billing.amount.toFixed(2) : '0,00'}
+                          {customer?.name || 'Cliente'} - {billing.description || 'Cobrança'} - R$ {(() => {
+                            let amount = billing.amount;
+                            if (typeof amount === 'string') {
+                              amount = parseFloat(amount.replace(',', '.'));
+                            }
+                            return typeof amount === 'number' && !isNaN(amount) 
+                              ? amount.toFixed(2).replace('.', ',') 
+                              : '0,00';
+                          })()}
                         </option>
                       );
                     })}
