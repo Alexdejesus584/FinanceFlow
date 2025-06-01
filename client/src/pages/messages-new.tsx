@@ -281,7 +281,10 @@ export default function Messages() {
                             : '0,00';
                           
                           message += `💰 Valor: R$ ${formattedAmount}\n`;
-                          message += `📅 Vencimento: ${bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('pt-BR') : 'Não definido'}\n`;
+                          message += `📅 Vencimento: ${bill.dueDate ? (() => {
+                            const date = new Date(bill.dueDate + 'T00:00:00');
+                            return date.toLocaleDateString('pt-BR');
+                          })() : 'Não definido'}\n`;
                           message += `📊 Status: ${bill.status === 'pending' ? 'Pendente' : bill.status}\n\n`;
                           
                           if (bill.pixKey) {

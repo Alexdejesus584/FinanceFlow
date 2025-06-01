@@ -841,6 +841,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { phone, content, instanceId, scheduledFor } = req.body;
       
+      console.log('Dispatch message request:', { phone, content, instanceId, scheduledFor });
+      
       if (!phone || !content || !instanceId) {
         return res.status(400).json({ message: "Phone, content and instanceId are required" });
       }
