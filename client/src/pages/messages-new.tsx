@@ -254,27 +254,33 @@ export default function Messages() {
                           }
                           setDispatcherPhone(phone || "55");
                           
-                          // Auto-preencher mensagem com template de cobrança
-                          const template = templates?.find(t => t.triggerType === 'billing');
-                          if (template) {
-                            let message = template.content;
-                            message = message.replace('{nome}', customer?.name || 'Cliente');
-                            
-                            // Format amount correctly - handle both string and number
-                            let amount = bill.amount;
-                            if (typeof amount === 'string') {
-                              // Convert Brazilian format (20,50) to number
-                              amount = parseFloat(amount.replace(',', '.'));
-                            }
-                            const formattedAmount = typeof amount === 'number' && !isNaN(amount) 
-                              ? amount.toFixed(2).replace('.', ',') 
-                              : '0,00';
-                            
-                            message = message.replace('{valor}', `R$ ${formattedAmount}`);
-                            message = message.replace('{servico}', bill.description || 'Serviço');
-                            message = message.replace('{data}', bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('pt-BR') : '');
-                            setDispatcherMessage(message);
+                          // Auto-preencher mensagem com dados da cobrança
+                          let message = `Olá ${customer?.name || 'Cliente'}!\n\n`;
+                          message += `Você tem uma cobrança pendente:\n\n`;
+                          message += `📋 Descrição: ${bill.description || 'Cobrança'}\n`;
+                          
+                          // Format amount correctly - handle both string and number
+                          let amount = bill.amount;
+                          if (typeof amount === 'string') {
+                            // Convert Brazilian format (20,50) to number
+                            amount = parseFloat(amount.replace(',', '.'));
                           }
+                          const formattedAmount = typeof amount === 'number' && !isNaN(amount) 
+                            ? amount.toFixed(2).replace('.', ',') 
+                            : '0,00';
+                          
+                          message += `💰 Valor: R$ ${formattedAmount}\n`;
+                          message += `📅 Vencimento: ${bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('pt-BR') : 'Não definido'}\n`;
+                          message += `📊 Status: ${bill.status === 'pending' ? 'Pendente' : bill.status}\n\n`;
+                          
+                          if (bill.pixKey) {
+                            message += `🔑 Chave PIX: ${bill.pixKey}\n\n`;
+                          }
+                          
+                          message += `Por favor, efetue o pagamento até a data de vencimento.\n\n`;
+                          message += `Em caso de dúvidas, entre em contato conosco.`;
+                          
+                          setDispatcherMessage(message);
                         }
                       }
                     }}
