@@ -10,7 +10,7 @@ import Dashboard from "@/pages/dashboard";
 import Calendar from "@/pages/calendar";
 import Customers from "@/pages/customers";
 import Kanban from "@/pages/kanban";
-import Messages from "@/pages/messages";
+import Messages from "@/pages/messages-new";
 import Evolution from "@/pages/evolution";
 import Users from "@/pages/users";
 import Sidebar from "@/components/sidebar";
