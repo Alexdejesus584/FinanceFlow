@@ -280,12 +280,7 @@ export default function Messages() {
                     }}
                   >
                     <option value="">Selecione uma cobrança</option>
-                    {activeBillings
-                      .filter((item: any) => {
-                        const billing = item.billings || item;
-                        return billing.status === 'pending';
-                      })
-                      .map((item: any) => {
+                    {activeBillings.map((item: any) => {
                       const billing = item.billings || item;
                       const customer = item.customer || item.customers;
                       return (
@@ -298,7 +293,7 @@ export default function Messages() {
                             return typeof amount === 'number' && !isNaN(amount) 
                               ? amount.toFixed(2).replace('.', ',') 
                               : '0,00';
-                          })()}
+                          })()} - {billing.status || 'Status'}
                         </option>
                       );
                     })}
