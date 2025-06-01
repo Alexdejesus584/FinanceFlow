@@ -906,6 +906,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send billing notifications via WhatsApp
+  app.post('/api/send-billing-notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { billingIds, instanceId } = req.body;
+      
+      if (!billingIds || !Array.isArray(billingIds) || !instanceId) {
+        return res.status(400).json({ message: "billingIds array and instanceId are required" });
+      }
+
+      const instance = await storage.getEvolutionInstance(instanceId, userId);
+      if (!instance || !instance.isConnected) {
+        return res.status(400).json({ message: "WhatsApp instance not found or not connected" });
+      }
+      
+      const settings = await storage.getEvolutionSettings(userId);
+      if (!settings) {
+        return res.status(400).json({ message: "Evolution API settings not configured" });
+      }
+      
+      const evolutionClient = new EvolutionAPIClient({
+        baseUrl: settings.globalApiUrl,
+        globalApiKey: settings.globalApiKey,
+      });
+      
+      const results = [];
+      
+      for (const billingId of billingIds) {
+        try {
+          const billing = await storage.getBilling(billingId, userId);
+          if (!billing) {
+            results.push({ billingId, success: false, error: "Billing not found" });
+            continue;
+          }
+
+          const customer = await storage.getCustomer(billing.customerId, userId);
+          if (!customer || !customer.phone) {
+            results.push({ billingId, success: false, error: "Customer phone not available" });
+            continue;
+          }
+
+          // Format phone number
+          const phone = customer.phone.replace(/\D/g, '');
+          const formattedPhone = phone.length === 11 ? `55${phone}` : phone;
+          
+          // Generate billing message using template or default format
+          const message = `Olá ${customer.name}!\n\nVocê tem uma cobrança pendente:\n\n💰 Valor: R$ ${billing.amount.toFixed(2)}\n📅 Vencimento: ${new Date(billing.dueDate).toLocaleDateString('pt-BR')}\n📝 Descrição: ${billing.description}\n\nPor favor, efetue o pagamento até a data de vencimento.\n\nObrigado!`;
+
+          const whatsappResponse = await evolutionClient.sendTextMessage(
+            instance.instanceName,
+            `${formattedPhone}@s.whatsapp.net`,
+            message
+          );
+          
+          const success = whatsappResponse && !whatsappResponse.error;
+          
+          // Create message history
+          await storage.createMessageHistory({
+            userId,
+            customerId: customer.id,
+            templateId: null,
+            content: message,
+            method: 'whatsapp',
+            status: success ? 'sent' : 'failed',
+            sentAt: success ? new Date() : undefined,
+          });
+          
+          results.push({ 
+            billingId, 
+            success, 
+            customerName: customer.name,
+            amount: billing.amount 
+          });
+          
+        } catch (error) {
+          console.error(`Error sending billing ${billingId}:`, error);
+          results.push({ billingId, success: false, error: "Failed to send message" });
+        }
+      }
+      
+      const successCount = results.filter(r => r.success).length;
+      
+      res.json({ 
+        success: true,
+        results,
+        summary: {
+          total: billingIds.length,
+          sent: successCount,
+          failed: billingIds.length - successCount
+        }
+      });
+      
+    } catch (error) {
+      console.error("Error sending billing notifications:", error);
+      res.status(500).json({ message: "Failed to send billing notifications" });
+    }
+  });
+
   // Inicializar scheduler
   scheduler.start();
   

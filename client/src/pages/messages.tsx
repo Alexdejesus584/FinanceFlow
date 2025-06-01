@@ -52,6 +52,8 @@ export default function Messages() {
   const [dispatcherPhone, setDispatcherPhone] = useState("");
   const [dispatcherMessage, setDispatcherMessage] = useState("");
   const [dispatcherInstance, setDispatcherInstance] = useState<string>("");
+  const [showBillingDispatcherDialog, setShowBillingDispatcherDialog] = useState(false);
+  const [selectedBillings, setSelectedBillings] = useState<number[]>([]);
 
   const { data: templates, isLoading: templatesLoading } = useQuery<MessageTemplate[]>({
     queryKey: ["/api/message-templates"],
@@ -66,9 +68,18 @@ export default function Messages() {
     enabled: showSendMessageDialog,
   });
 
+  const { data: pendingBillings } = useQuery({
+    queryKey: ["/api/billings"],
+  });
+
   const { data: instances, refetch: refetchInstances, isLoading: instancesLoading } = useQuery<EvolutionInstance[]>({
     queryKey: ["/api/evolution-instances"],
     enabled: true, // Sempre carregar instâncias para o Disparador
+  });
+
+  const { data: billings, refetch: refetchBillings } = useQuery({
+    queryKey: ["/api/billings"],
+    enabled: showBillingDispatcherDialog,
   });
 
   const deleteTemplateMutation = useMutation({
@@ -129,6 +140,29 @@ export default function Messages() {
       toast({
         title: "Erro no disparador",
         description: "Falha ao enviar mensagem WhatsApp.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendBillingNotificationsMutation = useMutation({
+    mutationFn: async (data: { billingIds: number[]; instanceId: number }) => {
+      const response = await apiRequest("/api/send-billing-notifications", "POST", data);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/message-history"] });
+      toast({
+        title: "Cobranças enviadas",
+        description: `${data.summary.sent} de ${data.summary.total} cobranças enviadas com sucesso.`,
+      });
+      setShowBillingDispatcherDialog(false);
+      setSelectedBillings([]);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao enviar cobranças",
+        description: "Falha ao enviar cobranças via WhatsApp.",
         variant: "destructive",
       });
     },
@@ -346,10 +380,10 @@ export default function Messages() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
-                Disparador
+                Disparador de Cobranças
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Envie mensagens individuais para seus contatos do WhatsApp. Selecione uma instância e configure seu envio.
+                Envie cobranças automáticas para seus clientes via WhatsApp. Selecione uma instância conectada para processar as cobranças pendentes.
               </p>
             </CardHeader>
             
@@ -402,10 +436,10 @@ export default function Messages() {
                             disabled={!instance.isConnected}
                             onClick={() => {
                               setDispatcherInstance(instance.id.toString());
-                              setShowDispatcherDialog(true);
+                              setShowBillingDispatcherDialog(true);
                             }}
                           >
-                            {instance.isConnected ? 'Usar' : 'Offline'}
+                            {instance.isConnected ? 'Processar Cobranças' : 'Offline'}
                           </Button>
                         </div>
                       ))
@@ -596,7 +630,107 @@ export default function Messages() {
         </DialogContent>
       </Dialog>
 
-      {/* Dispatcher Dialog */}
+      {/* Billing Dispatcher Dialog */}
+      <Dialog open={showBillingDispatcherDialog} onOpenChange={setShowBillingDispatcherDialog}>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Disparador de Cobranças WhatsApp</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Envie cobranças do sistema para seus clientes via WhatsApp usando a instância selecionada
+            </p>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Instância: {instances?.find(i => i.id.toString() === dispatcherInstance)?.instanceName || 'Não selecionada'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-3 block">Selecione as cobranças para enviar:</label>
+              
+              {pendingBillings && Array.isArray(pendingBillings) && pendingBillings.length > 0 ? (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {pendingBillings.map((billing: any) => (
+                    <div key={billing.billings.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedBillings.includes(billing.billings.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedBillings([...selectedBillings, billing.billings.id]);
+                            } else {
+                              setSelectedBillings(selectedBillings.filter(id => id !== billing.billings.id));
+                            }
+                          }}
+                          className="rounded"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{billing.customer?.name || 'Cliente não identificado'}</span>
+                            <Badge variant={billing.billings.status === 'paid' ? 'default' : 'destructive'}>
+                              {billing.billings.status === 'paid' ? 'Pago' : 'Pendente'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            R$ {billing.billings.amount?.toFixed(2) || '0,00'} - Vence: {billing.billings.dueDate ? new Date(billing.billings.dueDate).toLocaleDateString('pt-BR') : 'Data não definida'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {billing.billings.description || 'Sem descrição'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Nenhuma cobrança encontrada</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Crie cobranças no sistema para poder enviá-las
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                {selectedBillings.length} cobrança(s) selecionada(s)
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowBillingDispatcherDialog(false);
+                    setSelectedBillings([]);
+                  }}
+                  disabled={dispatchMessageMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // Aqui será implementada a função de envio das cobranças
+                    console.log('Enviando cobranças:', selectedBillings);
+                  }}
+                  disabled={dispatchMessageMutation.isPending || selectedBillings.length === 0}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {dispatchMessageMutation.isPending ? "Enviando..." : `Enviar ${selectedBillings.length} Cobrança(s)`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Old Dispatcher Dialog - mantido para casos especiais */}
       <Dialog open={showDispatcherDialog} onOpenChange={setShowDispatcherDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
