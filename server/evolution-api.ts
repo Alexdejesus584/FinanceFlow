@@ -92,6 +92,11 @@ export class EvolutionAPIClient {
     return await this.makeRequest(`/instance/connect/${instanceName}`, 'GET');
   }
 
+  // Obter QR Code da instância
+  async getQRCode(instanceName: string): Promise<any> {
+    return await this.makeRequest(`/instance/qrcode/${instanceName}`, 'GET');
+  }
+
   // Desconectar uma instância
   async logoutInstance(instanceName: string): Promise<any> {
     return await this.makeRequest(`/instance/logout/${instanceName}`, 'DELETE');

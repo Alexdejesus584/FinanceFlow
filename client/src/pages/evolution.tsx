@@ -40,6 +40,8 @@ function Evolution() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewInstanceDialog, setShowNewInstanceDialog] = useState(false);
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<any>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const [globalSettings, setGlobalSettings] = useState({
     globalApiUrl: "https://evolutionapi3.m2vendas.com.br",
@@ -110,6 +112,29 @@ function Evolution() {
       toast({
         title: "Erro ao criar instância",
         description: error.message || "Não foi possível criar a instância.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation para gerar QR Code
+  const generateQR = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest(`/api/evolution-instances/${id}/qrcode`, "GET");
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "QR Code gerado",
+        description: "QR Code gerado com sucesso. Escaneie para conectar.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/evolution-instances"] });
+      setQrCodeData(data);
+      setShowQRDialog(true);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível gerar o QR Code.",
         variant: "destructive",
       });
     },
@@ -451,28 +476,32 @@ function Evolution() {
                   )}
                   
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant={instance.isConnected ? "destructive" : "default"}
-                      onClick={() => toggleConnection.mutate({ 
-                        id: instance.id, 
-                        action: instance.isConnected ? 'disconnect' : 'connect' 
-                      })}
-                      className="flex-1"
-                      disabled={toggleConnection.isPending}
-                    >
-                      {instance.isConnected ? (
-                        <>
-                          <PowerOff className="w-4 h-4 mr-1" />
-                          Desconectar
-                        </>
-                      ) : (
-                        <>
-                          <Power className="w-4 h-4 mr-1" />
-                          Conectar
-                        </>
-                      )}
-                    </Button>
+                    {instance.isConnected ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => toggleConnection.mutate({ 
+                          id: instance.id, 
+                          action: 'disconnect' 
+                        })}
+                        className="flex-1"
+                        disabled={toggleConnection.isPending}
+                      >
+                        <PowerOff className="w-4 h-4 mr-1" />
+                        Desconectar
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => generateQR.mutate(instance.id)}
+                        className="flex-1"
+                        disabled={generateQR.isPending}
+                      >
+                        <Power className="w-4 h-4 mr-1" />
+                        Gerar QR
+                      </Button>
+                    )}
                     
                     <Button
                       size="sm"
@@ -490,6 +519,43 @@ function Evolution() {
           </div>
         )}
       </div>
+
+      {/* Modal QR Code */}
+      <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+        <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 dark:text-white flex items-center gap-2">
+              <span>📱</span> QR Code para Conexão
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {qrCodeData?.qrCode ? (
+              <div className="text-center space-y-4">
+                <div className="bg-white p-4 rounded-lg mx-auto inline-block">
+                  <img 
+                    src={`data:image/png;base64,${qrCodeData.qrCode}`}
+                    alt="QR Code"
+                    className="w-64 h-64 mx-auto"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Escaneie este QR Code com o WhatsApp para conectar a instância
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    Abra o WhatsApp → Menu → Dispositivos conectados → Conectar um dispositivo
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-500 dark:text-gray-400">Gerando QR Code...</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
