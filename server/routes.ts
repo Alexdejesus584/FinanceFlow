@@ -128,7 +128,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertBillingSchema.parse(req.body);
-      const billing = await storage.createBilling({ ...validatedData, userId });
+      
+      // Convert amount number to decimal string for database
+      const billingData = {
+        ...validatedData,
+        userId,
+        amount: validatedData.amount.toString()
+      };
+      
+      const billing = await storage.createBilling(billingData);
       
       // Create calendar event for the billing
       await storage.createCalendarEvent({

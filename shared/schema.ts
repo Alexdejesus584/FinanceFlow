@@ -271,6 +271,8 @@ export const insertBillingSchema = createInsertSchema(billings).omit({
   userId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  amount: z.number().min(0.01, "Valor deve ser maior que 0"),
 });
 
 export const insertMessageTemplateSchema = createInsertSchema(messageTemplates).omit({
