@@ -71,22 +71,16 @@ export class EvolutionAPIClient {
 
   // Criar uma nova instância
   async createInstance(instanceData: CreateInstanceRequest): Promise<InstanceInfo> {
-    // Preparar dados limpos sem campos opcionais undefined
-    const cleanData: any = {
-      instanceName: instanceData.instanceName
+    // Enviar apenas os campos básicos requeridos
+    const requestData = {
+      instanceName: instanceData.instanceName,
+      token: instanceData.token || undefined
     };
     
-    if (instanceData.token) {
-      cleanData.token = instanceData.token;
-    }
-    
-    if (instanceData.qrcode !== undefined) {
-      cleanData.qrcode = instanceData.qrcode;
-    }
-    
-    if (instanceData.number) {
-      cleanData.number = instanceData.number;
-    }
+    // Remover campos undefined
+    const cleanData = Object.fromEntries(
+      Object.entries(requestData).filter(([_, value]) => value !== undefined)
+    );
     
     return await this.makeRequest('/instance/create', 'POST', cleanData);
   }
