@@ -524,6 +524,77 @@ export default function Messages() {
         </DialogContent>
       </Dialog>
 
+      {/* Dispatcher Dialog */}
+      <Dialog open={showDispatcherDialog} onOpenChange={setShowDispatcherDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Disparador WhatsApp</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Envie uma mensagem direta para qualquer número do WhatsApp
+            </p>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Instância WhatsApp</label>
+              <Select value={dispatcherInstance} onValueChange={setDispatcherInstance}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar instância conectada" />
+                </SelectTrigger>
+                <SelectContent>
+                  {instances?.filter(instance => instance.isConnected).map((instance) => (
+                    <SelectItem key={instance.id} value={instance.id.toString()}>
+                      {instance.instanceName} - Conectado
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {instances?.filter(instance => instance.isConnected).length === 0 && (
+                <p className="text-sm text-orange-600 mt-1">
+                  Nenhuma instância WhatsApp conectada. Configure uma instância na seção Evolution API.
+                </p>
+              )}
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">Número WhatsApp</label>
+              <Input
+                placeholder="Ex: 11999887766 ou 5511999887766"
+                value={dispatcherPhone}
+                onChange={(e) => setDispatcherPhone(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">Mensagem</label>
+              <Textarea
+                placeholder="Digite sua mensagem..."
+                value={dispatcherMessage}
+                onChange={(e) => setDispatcherMessage(e.target.value)}
+                rows={4}
+              />
+            </div>
+            
+            <div className="flex items-center justify-end space-x-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDispatcherDialog(false)}
+                disabled={dispatchMessageMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleDispatchMessage}
+                disabled={dispatchMessageMutation.isPending}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {dispatchMessageMutation.isPending ? "Enviando..." : "Disparar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <MessageTemplateForm 
         open={showTemplateForm}
         onClose={handleCloseTemplateForm}

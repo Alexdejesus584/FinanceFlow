@@ -827,6 +827,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dispatch message to WhatsApp number
+  app.post('/api/dispatch-message', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { phone, content, instanceId } = req.body;
+      
+      if (!phone || !content || !instanceId) {
+        return res.status(400).json({ message: "Phone, content and instanceId are required" });
+      }
+
+      const instance = await storage.getEvolutionInstance(instanceId, userId);
+      if (!instance || !instance.isConnected) {
+        return res.status(400).json({ message: "WhatsApp instance not found or not connected" });
+      }
+      
+      const settings = await storage.getEvolutionSettings(userId);
+      if (!settings) {
+        return res.status(400).json({ message: "Evolution API settings not configured" });
+      }
+      
+      const evolutionClient = new EvolutionAPIClient({
+        baseUrl: settings.globalApiUrl,
+        globalApiKey: settings.globalApiKey,
+      });
+      
+      // Format WhatsApp number
+      const cleanPhone = phone.replace(/\D/g, '');
+      const formattedPhone = cleanPhone.length === 11 && cleanPhone.startsWith('1') 
+        ? `55${cleanPhone}` 
+        : cleanPhone.length === 10 
+        ? `5511${cleanPhone}` 
+        : cleanPhone;
+      
+      try {
+        const whatsappResponse = await evolutionClient.sendTextMessage(
+          instance.instanceName,
+          `${formattedPhone}@s.whatsapp.net`,
+          content
+        );
+        
+        const success = whatsappResponse && !whatsappResponse.error;
+        
+        // Create message history for dispatched message
+        await storage.createMessageHistory({
+          userId,
+          customerId: null, // No customer for direct dispatch
+          templateId: null,
+          content,
+          method: 'whatsapp',
+          status: success ? 'sent' : 'failed',
+          sentAt: success ? new Date() : undefined,
+        });
+        
+        res.json({ 
+          success, 
+          message: success ? 'Message dispatched successfully' : 'Failed to dispatch message',
+          phone: formattedPhone
+        });
+      } catch (error) {
+        console.error("Error dispatching WhatsApp message:", error);
+        
+        await storage.createMessageHistory({
+          userId,
+          customerId: null,
+          templateId: null,
+          content,
+          method: 'whatsapp',
+          status: 'failed',
+          sentAt: undefined,
+        });
+        
+        res.status(500).json({ message: "Failed to dispatch WhatsApp message" });
+      }
+    } catch (error) {
+      console.error("Error in dispatch message:", error);
+      res.status(500).json({ message: "Failed to dispatch message" });
+    }
+  });
+
   // Inicializar scheduler
   scheduler.start();
   
