@@ -521,10 +521,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usar o nome real da instância da Evolution API
       const qrResponse = await evolutionClient.getQRCode(realInstance.name);
       
+      // Log detalhado para debug
+      console.log('QR Response from Evolution API:', JSON.stringify(qrResponse, null, 2));
+      
+      // Extrair QR Code de diferentes possíveis formatos
+      let qrCodeData = null;
+      if (qrResponse.qrcode) {
+        qrCodeData = qrResponse.qrcode;
+      } else if (qrResponse.qrCode) {
+        qrCodeData = qrResponse.qrCode;
+      } else if (qrResponse.base64) {
+        qrCodeData = qrResponse.base64;
+      } else if (qrResponse.data && qrResponse.data.qrcode) {
+        qrCodeData = qrResponse.data.qrcode;
+      } else if (qrResponse.instance && qrResponse.instance.qrcode) {
+        qrCodeData = qrResponse.instance.qrcode;
+      }
+      
       res.json({
-        qrCode: qrResponse.qrcode || qrResponse.qrCode || qrResponse.base64,
+        qrCode: qrCodeData,
         instance: qrResponse.instance,
-        realInstanceName: realInstance.name
+        realInstanceName: realInstance.name,
+        fullResponse: qrResponse // Para debug
       });
     } catch (error) {
       console.error("Error getting QR code:", error);
